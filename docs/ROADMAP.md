@@ -20,17 +20,20 @@
 ### v0.4 (done)
 - PM-led team: owner talks only to the PM and defines every position; teams saved per project
 
-### v0.5
+### v0.6 (done)
+- Skills, coding workspace, connectors, self-protection, new calculators
+
+### v0.7
 - Desktop/web UI (chat + forms + file previews)
 - Quotation / proposal package: 2D drawing, 3D views, machine spec, machine list in one bundle
 - Utility calculator (power, compressed air, water, steam)
 - A3 layout drawing with title block, DXF export; 3D placement script for Blender/FreeCAD
 
-### v0.6
+### v0.8
 - Embedding-based search, PDF/datasheet ingestion with OCR
 - Fine-tune pipeline script (LoRA -> GGUF -> Ollama)
 
-### v0.7+
+### v0.9+
 - Community dataset repo + CI leak scanner, quarterly Community LoRA
 - Federated LoRA training
 

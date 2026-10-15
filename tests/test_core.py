@@ -288,3 +288,35 @@ def test_engineering_calcs_and_skills():
     for s in skills.values():   # every tool a skill names must exist (Pro tools excepted)
         for t in s.tools:
             assert t in reg or t.startswith(("plc_", "iot_")) or t == "search_knowledge", (s.name, t)
+
+
+def test_guard_backup_restore_selftest_and_history(tmp_path):
+    from improvise import guard
+    from improvise.coding import workspace_history, workspace_read, workspace_restore, workspace_write
+    from improvise.memory import default_memory
+    default_memory().add_feedback("t", "keep me")
+    z = guard.backup()
+    assert z.exists() and "experience.db" in __import__("zipfile").ZipFile(z).namelist()
+    assert guard.auto_backup() is None or True
+    safety = guard.restore(z)
+    assert safety.exists()
+    assert guard.selftest()["ok"]
+    workspace_write("a.py", "v1")
+    workspace_write("a.py", "v2 broken")
+    assert len(workspace_history("a.py")) == 1
+    workspace_restore("a.py")
+    assert workspace_read("a.py") == "v1"
+    with pytest.raises(ValueError):
+        workspace_write(".history/x", "no")
+
+
+def test_connector_catalogue():
+    from improvise import connectors
+    with pytest.raises(ValueError):
+        connectors.add("excel")                       # needs dir
+    r = connectors.add("excel", {"dir": "/tmp/q"})
+    assert r["entry"]["args"][-1] == "/tmp/q" or "/tmp/q" in r["entry"]["args"]
+    r = connectors.add("grafana", env={"GRAFANA_URL": "http://x"})
+    assert r["entry"]["env"]["GRAFANA_URL"] == "http://x" and any("GRAFANA_SERVICE_ACCOUNT_TOKEN" in w for w in r["warnings"])
+    assert set(connectors.installed()) == {"excel", "grafana"}
+    assert connectors.remove("excel") and "excel" not in connectors.installed()

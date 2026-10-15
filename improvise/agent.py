@@ -92,6 +92,12 @@ class Agent:
     def ask(self, text: str) -> str:
         experience = default_memory().context_for(text)
         content = text if not experience else f"{text}\n\n[Relevant experience]\n{experience}"
+        # small models rarely look things up on their own: attach the best reference passages
+        from .knowledge import default_kb
+        refs = default_kb().search(text, limit=2)
+        if refs:
+            content += "\n\n[Reference knowledge - prefer this over general assumptions]\n" + "\n---\n".join(
+                f"({src}) {body[:900]}" for src, body in refs)
         self.messages.append({"role": "user", "content": content})
         allowed = self._select_tools(text)
         seen: dict[str, str] = {}

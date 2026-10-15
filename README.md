@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.5 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.6 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![Improvise calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +16,23 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.6 — 2026-10-16**
+- 🧠 **Skills.** 18 built-in engineering skills (proposal package, line sizing, layout, conveyor design,
+  pneumatics, utilities, ROI, OEE improvement, hygienic design, risk assessment, FAT/SAT, URS review,
+  line simulation, maintenance plan, supplier comparison, …) loaded only when a job needs them.
+  Write your own with `improvise skills new <name>`.
+- 💻 **Writes and runs code.** A private workspace where Improvise writes Python for simulations,
+  data conversion and custom calculations, runs it (with your confirmation) and fixes errors.
+  Every overwritten file keeps its earlier versions.
+- 🔌 **Connect to other software in one command.** `improvise connect add freecad | blender | excel | grafana | influxdb3 | opcua | …`
+  (14 checked open-source MCP servers, see [docs/CONNECTORS.md](docs/CONNECTORS.md)).
+- 🛟 **Protects itself.** Daily automatic backups of your experience, skills and teams; `improvise update`
+  updates from GitHub, runs a self-test and rolls back automatically if the new version is broken.
+- ⚙️ **New calculators:** conveyor speed and motor, pneumatic cylinders and air, heat load and steam,
+  pump power, total line utilities.
+- 🎯 **Much better with small local models:** tool routing, automatic reference knowledge, guards against
+  repeated or malformed tool calls. Benchmark on an 8B model: **91 %** (see below).
 
 **v0.5 — 2026-10-16**
 - ✨ **New name: Improvise.** factory-ai is now *Improvise* — it improves and gets wiser from every
@@ -60,9 +77,51 @@ Full history: [CHANGELOG.md](CHANGELOG.md)
 | Benchmark | engineering questions graded against the calculation tools | `bench.py` |
 | MCP | serve Improvise to other AI assistants; use other MCP servers safely | `mcp.py` |
 | Project team | PM, consultant and discipline specialists working a brief together | `team.py` |
+| Skills | 18 engineering skills loaded on demand; add your own | `skills.py`, `skill_library/` |
+| Coding | workspace to write, run and version Python programs | `coding.py` |
+| Connectors | one-command connection to FreeCAD, Blender, Excel, Grafana, InfluxDB, OPC UA… | `connectors.py` |
+| Self-protection | daily backups, self-test, safe update with automatic rollback | `guard.py` |
 
 Core principle: **the AI never guesses numbers.** Every figure comes from a tested calculation function;
 the language model's job is to understand the request, pick the right tools and explain the result.
+
+## How good is it?
+
+Measured with `improvise bench` (18 engineering questions in English and Thai, graded against the
+calculation tools) on **Qwen3 8B running locally on a laptop RTX 4050 (6 GB)**:
+
+| Area | Score |
+|---|---|
+| Line calculations (takt, machines, capacity, line balance, buffers) | 97 % |
+| OEE | 100 % |
+| ROI (payback, NPV, IRR) | 100 % |
+| Layout | 100 % |
+| Documents (no invented prices) | 100 % |
+| Using your confirmed experience | 100 % |
+| Engineering knowledge questions | 53 % → improved in v0.6 (automatic reference knowledge) |
+| **Overall** | **91 %** |
+
+What that means in practice:
+
+| Level | Tasks |
+|---|---|
+| ✅ **Reliable** | Numbers: every figure comes from tested calculation tools — takt, machine count, capacity, line balance, OEE, ROI, conveyors, pneumatics, utilities. |
+| 🟡 **Good first draft, engineer reviews** | Layouts, machine lists, manuals, spec sheets, proposal structure, schedules, small Python programs, project-team reports. |
+| 🔶 **Assistant only** | Judgement calls (technology choice, supplier selection), safety, anything that touches a real machine. |
+
+Bigger models answer knowledge and planning questions better; the calculations are the same on every model.
+
+## What computer do I need?
+
+| Use | Computer | Model | Speed (typical answer) |
+|---|---|---|---|
+| Calculations, documents, layouts only (`improvise run …`) | Any PC with Python 3.10+, 4 GB RAM | none | instant |
+| **Entry** — chat, skills, team mode | NVIDIA GPU with 6–8 GB VRAM (e.g. RTX 3050/4050/4060) or Apple Silicon with 16 GB; 16 GB RAM | 7–8B (e.g. `qwen3:8b`, ~5 GB) | 10–60 s (measured: ~17 s on RTX 4050 Laptop) |
+| **Recommended** | 12–16 GB VRAM (e.g. RTX 3060 12 GB, 4070 Ti, 4080) or Apple Silicon 32 GB; 32 GB RAM | 14B (~9 GB) | faster and better reasoning |
+| **Best** — long team sessions, complex documents | 24 GB VRAM (RTX 3090/4090) or Apple Silicon 64 GB | 30B+ (~20 GB) | best quality |
+| No GPU | any modern CPU, 16 GB RAM | 7–8B | works, but minutes per answer |
+
+Disk: about 5–20 GB per model. Windows, macOS and Linux are supported.
 
 ## Installation (Windows / macOS / Linux)
 
@@ -70,7 +129,7 @@ the language model's job is to understand the request, pick the right tools and 
 2. Pull a model that supports tool calling, sized to your GPU — roughly 7–8B for 6–8 GB of VRAM,
    14B or larger for 12 GB and up. For example:
    ```bash
-   ollama pull qwen2.5:14b
+   ollama pull qwen3:8b
    ```
    Set the model name with the `IMPROVISE_MODEL` environment variable.
 3. Install Improvise:
@@ -91,7 +150,11 @@ improvise run takt_time '{"demand_units":20000,"shifts":2,"hours_per_shift":8,"b
 improvise run layout_line examples/bottling_line.json
 improvise team                      # talk to your Project Manager; it builds and leads the team
 improvise team --list               # role catalogue and saved projects
-improvise pro                       # see what the Pro edition adds
+improvise skills                     # engineering skills it can use
+improvise connect add freecad        # plug into other software
+improvise backup                     # back up your experience (also automatic, daily)
+improvise update                     # safe update with automatic rollback
+improvise pro                        # see what the Pro edition adds
 ```
 
 The calculation tools work without a language model — `improvise run` calls them directly.

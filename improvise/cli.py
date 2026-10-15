@@ -9,6 +9,9 @@
   improvise bench [--model m] [--compare old.json]   score a model on engineering questions
   improvise team [--project name]        talk to your Project Manager, who builds and leads a team
   improvise team "brief..." | team --list
+  improvise connect [list | add <name> | remove <name>]  plug into FreeCAD, Excel, Grafana, OPC UA...
+  improvise backup [list | restore <zip>]        your data, backed up daily automatically
+  improvise selftest | update [--rollback]       safe self-update that rolls back if broken
   improvise skills [show <name> | new <name>]   packaged know-how loaded on demand
   improvise mcp serve | mcp tools        MCP server for other AIs / list tools from ~/.improvise/mcp.json
   improvise contribute [--secret "Customer A" ...]
@@ -313,6 +316,51 @@ def cmd_team(args) -> None:
             team.save()
 
 
+def cmd_connect(args) -> None:
+    from . import connectors as c
+    if args.action == "add":
+        kv = lambda items: dict(i.split("=", 1) for i in items or [])  # noqa: E731
+        _print(c.add(args.name, kv(args.param), kv(args.env)))
+    elif args.action == "remove":
+        print("removed" if c.remove(args.name) else "not connected")
+    else:
+        inst = c.installed()
+        cat = None
+        for name, e in sorted(c.CATALOGUE.items(), key=lambda kv: (kv[1]["category"], kv[0])):
+            if e["category"] != cat:
+                cat = e["category"]
+                print(f"\n{cat}")
+            print(f"  {'[x]' if name in inst else '[ ]'} {name:11s} {e['about']}")
+        print(f"\nconfig: {c.config_path()}  - then 'improvise mcp tools' to see the connected tools")
+
+
+def cmd_backup(args) -> None:
+    from . import guard
+    if args.action == "restore":
+        if not args.file:
+            sys.exit("give the backup file: improvise backup restore <zip>")
+        print(f"current state saved to {guard.restore(args.file)}; backup restored")
+    elif args.action == "list":
+        for f in guard.list_backups():
+            print(f"{f.name}  {f.stat().st_size // 1024} KB")
+    else:
+        print(f"backup written: {guard.backup()}")
+
+
+def cmd_selftest(args) -> None:
+    from .guard import selftest
+    r = selftest()
+    if not args.quiet:
+        _print(r)
+    sys.exit(0 if r["ok"] else 1)
+
+
+def cmd_update(args) -> None:
+    from . import guard
+    ok = guard.rollback() if args.rollback else guard.update()
+    sys.exit(0 if ok else 1)
+
+
 def cmd_skills(args) -> None:
     from .skills import load_skills, new_skill, skill_dirs, use_skill
     if args.action == "show" and args.name:
@@ -419,6 +467,24 @@ def main(argv: list[str] | None = None) -> None:
     tm.add_argument("--list", action="store_true", help="list the role catalogue and saved projects")
     tm.set_defaults(func=cmd_team)
 
+    cn = sub.add_parser("connect", help="plug Improvise into other software (FreeCAD, Excel, Grafana, OPC UA...)")
+    cn.add_argument("action", nargs="?", choices=["list", "add", "remove"], default="list")
+    cn.add_argument("name", nargs="?")
+    cn.add_argument("--param", action="append", help="key=value, e.g. dir=C:/quotes")
+    cn.add_argument("--env", action="append", help="KEY=VALUE stored only in your local mcp.json")
+    cn.set_defaults(func=cmd_connect)
+
+    bk = sub.add_parser("backup", help="back up / restore your experience, skills and teams")
+    bk.add_argument("action", nargs="?", choices=["create", "list", "restore"], default="create")
+    bk.add_argument("file", nargs="?")
+    bk.set_defaults(func=cmd_backup)
+    st = sub.add_parser("selftest", help="check that the program works")
+    st.add_argument("--quiet", action="store_true")
+    st.set_defaults(func=cmd_selftest)
+    up = sub.add_parser("update", help="safe self-update from GitHub with automatic rollback")
+    up.add_argument("--rollback", action="store_true", help="return to the last working version")
+    up.set_defaults(func=cmd_update)
+
     sk = sub.add_parser("skills", help="list, show or create skills")
     sk.add_argument("action", nargs="?", choices=["list", "show", "new"], default="list")
     sk.add_argument("name", nargs="?")
@@ -443,6 +509,12 @@ def main(argv: list[str] | None = None) -> None:
             mod.register_cli(sub)
 
     args = p.parse_args(argv)
+    if args.cmd in ("chat", "ask", "team"):
+        try:
+            from .guard import auto_backup
+            auto_backup()
+        except Exception:
+            pass  # a backup problem must never block work
     args.func(args)
 
 

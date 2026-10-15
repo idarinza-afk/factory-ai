@@ -9,8 +9,10 @@ needs a human "yes" every time (see improvise.safety).
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from .safety import confirm
@@ -43,9 +45,52 @@ def workspace_write(path: str, content: str) -> dict:
         content: full file content
     """
     p = _safe_path(path)
+    if p.relative_to(workspace().resolve()).parts[:1] == (".history",):
+        raise ValueError("the .history folder is read-only")
     p.parent.mkdir(parents=True, exist_ok=True)
+    saved = None
+    if p.exists():  # keep the previous version so broken code can always be restored
+        saved = _history_dir(path) / f"{time.strftime('%Y%m%d_%H%M%S')}_{p.name}"
+        saved.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(p, saved)
     p.write_text(content, encoding="utf-8")
-    return {"written": str(p), "bytes": len(content.encode("utf-8"))}
+    return {"written": str(p), "bytes": len(content.encode("utf-8")),
+            "previous_version_saved": saved.name if saved else None}
+
+
+def _history_dir(path: str) -> Path:
+    rel = _safe_path(path).relative_to(workspace().resolve())
+    return workspace() / ".history" / rel.parent / rel.name
+
+
+@tool
+def workspace_history(path: str) -> list:
+    """List saved earlier versions of a workspace file (newest last).
+
+    Args:
+        path: relative path of the file
+    """
+    d = _history_dir(path)
+    return sorted(f.name for f in d.glob("*")) if d.exists() else []
+
+
+@tool
+def workspace_restore(path: str, version: str = "") -> dict:
+    """Restore an earlier version of a workspace file (the current one is saved first).
+
+    Args:
+        path: relative path of the file
+        version: version name from workspace_history; empty = the most recent earlier version
+    """
+    versions = workspace_history(path)
+    if not versions:
+        raise ValueError("no earlier versions of this file")
+    v = version or versions[-1]
+    if v not in versions:
+        raise ValueError(f"unknown version; available: {versions}")
+    content = (_history_dir(path) / v).read_text(encoding="utf-8")
+    res = workspace_write(path, content)
+    return {"restored": v, **res}
 
 
 @tool
@@ -69,7 +114,8 @@ def workspace_list(folder: str = "") -> list:
     """
     root = workspace()
     base = _safe_path(folder) if folder else root
-    return sorted(f.relative_to(root).as_posix() for f in base.rglob("*") if f.is_file())[:500]
+    return sorted(f.relative_to(root).as_posix() for f in base.rglob("*")
+                  if f.is_file() and ".history" not in f.relative_to(root).parts)[:500]
 
 
 @tool

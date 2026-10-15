@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.6 — 2026-10-16
+### Added
+- Skills framework (SKILL.md, loaded on demand with `use_skill`) and 18 built-in engineering skills; `improvise skills`.
+- Coding workspace: `workspace_write/read/list`, `run_python` (confirmation required), version history and restore.
+- Software Engineer team role (can run on its own model via `IMPROVISE_CODE_MODEL`).
+- Calculators: conveyor sizing, pneumatic cylinder, heat load / steam, pump power, utilities summary.
+- Connector catalogue `improvise connect` (14 checked MCP servers) and docs/CONNECTORS.md.
+- Self-protection: `improvise backup` (+ automatic daily), `improvise selftest`, `improvise update` with rollback.
+- Knowledge: industrial connectivity.
+- README: measured capability and hardware guide.
+### Changed
+- Agent: tool routing for small models, automatic reference knowledge, duplicate-call guard,
+  parameter validation, forced final answer; thinking off by default (`IMPROVISE_THINK=1` to enable).
+### Fixed
+- Windows: workspace paths, benchmark temp files, restore with an open database.
+
 ## v0.5 — 2026-10-16
 ### Changed
 - Renamed factory-ai to **Improvise** (package `improvise`, command `improvise`, repo `idarinza-afk/improvise`).
