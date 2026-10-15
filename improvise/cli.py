@@ -231,7 +231,8 @@ def cmd_team(args) -> None:
     if args.brief:  # one-shot, non-interactive
         only = [r.strip() for r in args.roles.split(",")] if args.roles else None
         try:
-            res = run_team(" ".join(args.brief), only=only, progress=lambda m: print(m, flush=True))
+            show = (lambda n, a, r: print(f"      [tool] {n}({json.dumps(a, ensure_ascii=False)[:110]})", flush=True)) if args.verbose else None
+            res = run_team(" ".join(args.brief), only=only, progress=lambda m: print(m, flush=True), on_tool=show)
         except LLMError as e:
             sys.exit(str(e))
         print("\n" + res["summary"] + f"\n\nfull team report: {res['report']}")
@@ -465,6 +466,7 @@ def main(argv: list[str] | None = None) -> None:
     tm.add_argument("--project", help="project name (interactive mode)")
     tm.add_argument("--roles", help="one-shot: keep only these positions, e.g. process_engineer,design_engineer")
     tm.add_argument("--list", action="store_true", help="list the role catalogue and saved projects")
+    tm.add_argument("-v", "--verbose", action="store_true", help="show tool calls")
     tm.set_defaults(func=cmd_team)
 
     cn = sub.add_parser("connect", help="plug Improvise into other software (FreeCAD, Excel, Grafana, OPC UA...)")

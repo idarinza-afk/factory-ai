@@ -75,6 +75,7 @@ class ProjectTeam:
     brief: str = ""
     board: list[dict] = field(default_factory=list)         # {who, title, task, output, time}
     pm_history: list[dict] = field(default_factory=list)    # PM conversation with the user
+    _on_tool: Any = field(default=None, repr=False, compare=False)
 
     # ---------------------------------------------------------------- persistence
     @staticmethod
@@ -143,7 +144,10 @@ class ProjectTeam:
         from .config import _env
         # a position can run on its own model, e.g. a coder model for the Software Engineer
         model = (member or {}).get("model") or (_env((member or {}).get("model_env", "")) if (member or {}).get("model_env") else None)
-        a = Agent(replace(cfg, model=model) if model else cfg, role_prompt=role_text, tool_names=tools, use_tools=use_tools)
+        mcfg = replace(cfg, max_tool_rounds=min(cfg.max_tool_rounds, 5))  # keep each member's turn short
+        if model:
+            mcfg = replace(mcfg, model=model)
+        a = Agent(mcfg, role_prompt=role_text, tool_names=tools, use_tools=use_tools, on_tool=self._on_tool)
         if client is not None:
             a.llm = client
         return a
@@ -246,7 +250,7 @@ class ProjectTeam:
         self.save()
         return reply
 
-    def _board_text(self, last: int = 8, limit: int = 1500) -> str:
+    def _board_text(self, last: int = 5, limit: int = 900) -> str:
         parts = [f"PROJECT: {self.project}\nBRIEF: {self.brief}"]
         for e in self.board[-last:]:
             parts.append(f"--- {e['title']} ({e['task']}):\n{e['output'][:limit]}")
@@ -261,8 +265,10 @@ class ProjectTeam:
 
 # backwards-compatible one-shot run (non-interactive): PM proposes, team accepted as proposed
 def run_team(brief: str, cfg=None, only: list[str] | None = None, client=None,
-             progress: Callable[[str], None] = lambda s: None, project: str | None = None) -> dict[str, Any]:
+             progress: Callable[[str], None] = lambda s: None, project: str | None = None,
+             on_tool=None) -> dict[str, Any]:
     t = ProjectTeam(project or f"project_{time.strftime('%Y%m%d_%H%M%S')}")
+    t._on_tool = on_tool
     t.brief = brief
     if only:  # positions chosen by the user: take them straight from the catalogue
         cat, tools = load_roles(), set(available_tools())
