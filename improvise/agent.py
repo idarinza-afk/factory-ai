@@ -175,6 +175,7 @@ class Agent:
         allowed = self._select_tools(text)
         called_tools: set[str] = set()
         guard_retries = 0
+        reports: list[str] = []   # tool output that must reach the user verbatim (generated code, verdicts, files)
         if "make_flowchart" in REGISTRY and self.use_tools and self.tool_names is None:
             allowed.add("make_flowchart")
         if self.cfg.expert_provider and self.use_tools and self.tool_names is None:
@@ -199,6 +200,8 @@ class Agent:
                 if not fix and not last_round and called_tools and self.cfg.number_audit:
                     evidence = "\n".join(str(m.get("content", "")) for m in self.messages if m.get("role") in ("user", "tool"))
                     fix = self._audit_numbers(answer, evidence)
+                if not fix and reports:
+                    answer = answer.rstrip() + "\n\n---\n" + "\n\n".join(dict.fromkeys(reports))
                 if fix and guard_retries < 2:
                     guard_retries += 1
                     self.messages.append({"role": "user", "content": fix})
@@ -231,6 +234,13 @@ class Agent:
                         sk = load_skills().get(str(args.get("name", "")))
                         if sk:
                             allowed |= {t for t in sk.tools if t in REGISTRY}
+                if isinstance(result, dict):
+                    if result.get("report_to_user"):
+                        reports.append(str(result["report_to_user"]))
+                    files = [str(v) for k, v in result.items() if isinstance(v, str)
+                             and re.search(r"\.(xlsx|csv|docx|md|svg|html|dxf|obj|json|st|txt|ino|mmd)$", v, re.I)]
+                    if files:
+                        reports.append("Files: " + ", ".join(files))
                 if self.on_tool:
                     self.on_tool(name, args, result)
                 text_result = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, default=str)
