@@ -255,6 +255,7 @@ class ProjectTeam:
 def run_team(brief: str, cfg=None, only: list[str] | None = None, client=None,
              progress: Callable[[str], None] = lambda s: None, project: str | None = None) -> dict[str, Any]:
     t = ProjectTeam(project or f"project_{time.strftime('%Y%m%d_%H%M%S')}")
+    progress("[Project Manager] proposing the team")
     t.members = t.propose(brief, cfg, client)
     if only:
         t.members = {k: v for k, v in t.members.items() if k in only or v.get("reviewer")}

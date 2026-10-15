@@ -45,7 +45,7 @@ class Agent:
         self.cfg = cfg
         load_all()
         register_kb_tool()
-        self.llm = OllamaClient(cfg.ollama_url, cfg.model, cfg.temperature, think=cfg.think)
+        self.llm = OllamaClient(cfg.ollama_url, cfg.model, cfg.temperature, think=cfg.think, num_ctx=cfg.num_ctx)
         from .tools import PLUGINS
         prompt = SYSTEM_PROMPT + "".join(getattr(m, "PROMPT", "") for m in PLUGINS.values())
         if "pro" not in PLUGINS:

@@ -179,7 +179,7 @@ def cmd_bench(args) -> None:
         items = [i for i in items if i["id"].startswith(args.only) or i.get("category") == args.only]
     if args.limit:
         items = items[: args.limit]
-    res = bench.run(model=args.model, items=items, progress=print)
+    res = bench.run(model=args.model, items=items, progress=lambda m: print(m, flush=True))
     from .config import load
     out = Path(args.out) if args.out else load().output_dir / f"bench_{res['model'].replace(':', '-').replace('/', '-')}_{res['date'][:10]}.json"
     out.write_text(json.dumps(res, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -231,7 +231,7 @@ def cmd_team(args) -> None:
     if args.brief:  # one-shot, non-interactive
         only = [r.strip() for r in args.roles.split(",")] if args.roles else None
         try:
-            res = run_team(" ".join(args.brief), only=only, progress=print)
+            res = run_team(" ".join(args.brief), only=only, progress=lambda m: print(m, flush=True))
         except LLMError as e:
             sys.exit(str(e))
         print("\n" + res["summary"] + f"\n\nfull team report: {res['report']}")
