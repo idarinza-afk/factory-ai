@@ -193,6 +193,9 @@ class Agent:
             if not calls:
                 answer = msg.get("content", "")
                 fix = None if last_round else self._guard(answer, called_tools, allowed)
+                if not answer.strip() and not last_round:  # small models sometimes stop with an empty reply
+                    fix = ("Your reply was empty. Continue the task: call the tools you still need (convert per-shift or "
+                           "per-day figures to per-hour first if needed), then give the final answer.")
                 if not fix and not last_round and called_tools and self.cfg.number_audit:
                     evidence = "\n".join(str(m.get("content", "")) for m in self.messages if m.get("role") in ("user", "tool"))
                     fix = self._audit_numbers(answer, evidence)

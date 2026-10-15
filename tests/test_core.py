@@ -496,3 +496,16 @@ def test_number_audit():
     ev = "demand 20000 per day, 2 shifts 8 h, 60 min. takt_time_s: 2.52, required_rate_per_hour: 1428.6"
     assert a._audit_numbers("Takt is 2.52 s, 1,428.6 per hour, 20,000 per day.", ev) is None
     assert "not from the user" in a._audit_numbers("Takt 2.52 s; use 3 fillers at 4,500 bph and 7.5 kW, 900 mm wide.", ev)
+
+
+def test_empty_reply_is_retried():
+    from improvise.agent import Agent
+    from improvise.config import load
+
+    class Mock:
+        n = 0
+        def chat(self, messages, tools=None):
+            Mock.n += 1
+            return {"role": "assistant", "content": "" if Mock.n == 1 else "two ovens"}
+    a = Agent(load()); a.llm = Mock()
+    assert a.ask("how many ovens") == "two ovens"
