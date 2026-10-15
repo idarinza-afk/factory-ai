@@ -57,7 +57,16 @@ class OllamaClient:
                 f"Cannot reach Ollama at {self.base_url}. Is it running? "
                 f"Install from https://ollama.com and run: ollama pull {self.model}"
             ) from e
-        return data.get("message", {})
+        msg = data.get("message", {})
+        if self.think is False and not (msg.get("content") or "").strip() and not msg.get("tool_calls"):
+            # some thinking models (e.g. Qwen3) occasionally stop with an empty reply when thinking is off:
+            # retry this one call with the model's own thinking enabled
+            self.think = None
+            try:
+                return self.chat(messages, tools)
+            finally:
+                self.think = False
+        return msg
 
 
 def _post(url: str, payload: dict, headers: dict, timeout: int) -> dict:
