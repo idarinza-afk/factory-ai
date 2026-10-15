@@ -14,17 +14,20 @@
 - Benchmark suite + `factory-ai bench`
 - U-shaped layout flow
 
-### v0.3
+### v0.3 (done)
+- Project team mode (PM, consultant, discipline specialists)
+
+### v0.4
 - Desktop/web UI (chat + forms + file previews)
 - Quotation / proposal package: 2D drawing, 3D views, machine spec, machine list in one bundle
 - Utility calculator (power, compressed air, water, steam)
 - A3 layout drawing with title block, DXF export; 3D placement script for Blender/FreeCAD
 
-### v0.4
+### v0.5
 - Embedding-based search, PDF/datasheet ingestion with OCR
 - Fine-tune pipeline script (LoRA -> GGUF -> Ollama)
 
-### v0.5+
+### v0.6+
 - Community dataset repo + CI leak scanner, quarterly Community LoRA
 - Federated LoRA training
 

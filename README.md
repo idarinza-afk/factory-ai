@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **factory-ai Pro** (see below).
 
-> Status: v0.2 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.3 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![factory-ai calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +16,13 @@ Free to use. PLC control logic, IoT and dashboards are coming in **factory-ai Pr
 ---
 
 ## What's new
+
+**v0.3 — 2026-10-16**
+- 👷 **Project team mode.** `factory-ai team "your brief"` splits the thinking into a project team:
+  a Project Manager plans the work, specialists (process, layout design, electrical, QA & safety,
+  cost & ROI, technical writer — plus PLC and IT/IoT engineers with Pro) each work with only their
+  discipline's tools, a Senior Consultant reviews for risks and inconsistencies, and the PM writes the
+  final summary. Add your own roles in `~/.factory-ai/team_roles.json`.
 
 **v0.2 — 2026-10-16**
 - 🔌 **MCP support.** `factory-ai mcp serve` lets Claude Desktop and other AI assistants use every
@@ -40,6 +47,7 @@ Full history: [CHANGELOG.md](CHANGELOG.md)
 | Community | anonymised contribution packs to help train the shared model | `contribute.py` |
 | Benchmark | engineering questions graded against the calculation tools | `bench.py` |
 | MCP | serve factory-ai to other AI assistants; use other MCP servers safely | `mcp.py` |
+| Project team | PM, consultant and discipline specialists working a brief together | `team.py` |
 
 Core principle: **the AI never guesses numbers.** Every figure comes from a tested calculation function;
 the language model's job is to understand the request, pick the right tools and explain the result.
@@ -69,6 +77,8 @@ factory-ai ask "Bottling line, 20,000 bottles/day on 2 shifts: how many 3,000 bp
 factory-ai tools                     # list all tools
 factory-ai run takt_time '{"demand_units":20000,"shifts":2,"hours_per_shift":8,"break_min_per_shift":60}'
 factory-ai run layout_line examples/bottling_line.json
+factory-ai team "Juice line, 20,000 bottles/day, 2 shifts, 20 x 12 m room"   # work it as a project team
+factory-ai team --list               # roles in the team
 factory-ai pro                       # see what the Pro edition adds
 ```
 

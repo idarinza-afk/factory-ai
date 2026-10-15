@@ -77,6 +77,9 @@ class Memory:
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
 
+    def close(self) -> None:
+        self.conn.close()
+
     # --- write -----------------------------------------------------------
     def add_case(self, kind: str, title: str, problem: str, solution: str,
                  outcome: str = "", verified: bool = False, tags: str = "") -> int:

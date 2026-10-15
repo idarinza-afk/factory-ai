@@ -7,6 +7,7 @@
   factory-ai memory add|verify|rule|search|stats|export
   factory-ai pro                          what the Pro edition adds
   factory-ai bench [--model m] [--compare old.json]   score a model on engineering questions
+  factory-ai team "brief..." [--roles a,b] | team --list   project-team mode
   factory-ai mcp serve | mcp tools        MCP server for other AIs / list tools from ~/.factory-ai/mcp.json
   factory-ai contribute [--secret "Customer A" ...]
   factory-ai doctor                       check the local setup
@@ -183,6 +184,24 @@ def cmd_bench(args) -> None:
         print(bench.compare(res, json.loads(Path(args.compare).read_text(encoding="utf-8"))))
 
 
+def cmd_team(args) -> None:
+    from .team import load_roles, run_team
+    if args.list or not args.brief:
+        for k, r in load_roles().items():
+            tag = " (lead)" if r.get("lead") else " (reviewer)" if r.get("reviewer") else " [Pro]" if r.get("pro") else ""
+            print(f"{k:22s} {r['title']}{tag}")
+        print("\nAdd your own roles in ~/.factory-ai/team_roles.json")
+        return
+    from .llm import LLMError
+    only = [r.strip() for r in args.roles.split(",")] if args.roles else None
+    try:
+        res = run_team(" ".join(args.brief), only=only, progress=print)
+    except LLMError as e:
+        sys.exit(str(e))
+    print("\n" + res["summary"])
+    print(f"\nfull team report: {res['report']}")
+
+
 def cmd_mcp(args) -> None:
     from . import mcp
     if args.action == "serve":
@@ -269,6 +288,12 @@ def main(argv: list[str] | None = None) -> None:
 
     sub.add_parser("doctor", help="check setup").set_defaults(func=cmd_doctor)
     sub.add_parser("pro", help="what factory-ai Pro adds").set_defaults(func=cmd_pro)
+
+    tm = sub.add_parser("team", help="work on a brief as a project team (PM, consultant, engineers...)")
+    tm.add_argument("brief", nargs="*")
+    tm.add_argument("--roles", help="comma-separated specialists to include, e.g. process_engineer,design_engineer")
+    tm.add_argument("--list", action="store_true", help="list available roles")
+    tm.set_defaults(func=cmd_team)
 
     mc = sub.add_parser("mcp", help="MCP: serve factory-ai to other AIs, or list connected MCP tools")
     mc.add_argument("action", choices=["serve", "tools"])

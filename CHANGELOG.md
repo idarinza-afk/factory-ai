@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.3 — 2026-10-16
+### Added
+- Project team mode (`factory-ai team`): Project Manager plans, discipline specialists work with
+  their own tool sets on a shared project board, Senior Consultant reviews, PM summarises.
+  Roles in `team_roles.json`, user roles in `~/.factory-ai/team_roles.json`; PLC and IT/IoT roles with Pro.
+- Agent can run with a role prompt and a restricted tool set.
+### Fixed
+- Benchmark temporary memory is closed before cleanup (Windows).
+
 ## v0.2 — 2026-10-16
 ### Added
 - MCP server (`factory-ai mcp serve`): all tools plus teaching tools (`add_rule`, `verify_case`,

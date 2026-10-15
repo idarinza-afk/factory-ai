@@ -146,6 +146,8 @@ def run(model: str | None = None, items: list[dict] | None = None,
                     error = ""
                 except Exception as e:
                     answer, error = "", str(e)
+                memory_mod._default = real_default
+                mem.close()  # Windows cannot delete an open SQLite file
                 g = grade(item, answer, called)
                 g.update({"id": item["id"], "category": item.get("category", ""), "seconds": round(time.time() - t0, 1),
                           "tools_called": called, "answer": answer, "error": error})

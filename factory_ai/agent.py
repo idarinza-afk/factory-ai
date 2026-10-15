@@ -33,7 +33,11 @@ the line design, calculations and documents that the request needs.
 
 
 class Agent:
-    def __init__(self, cfg: Config, on_tool: Callable[[str, dict, Any], None] | None = None):
+    def __init__(self, cfg: Config, on_tool: Callable[[str, dict, Any], None] | None = None,
+                 role_prompt: str = "", tool_names: list[str] | None = None, use_tools: bool = True):
+        """role_prompt: extra instructions (e.g. a project-team role).
+        tool_names: restrict the tools this agent may call (None = all).
+        use_tools: False for pure reasoning/review steps."""
         self.cfg = cfg
         load_all()
         register_kb_tool()
@@ -42,17 +46,28 @@ class Agent:
         prompt = SYSTEM_PROMPT + "".join(getattr(m, "PROMPT", "") for m in PLUGINS.values())
         if "pro" not in PLUGINS:
             prompt += FREE_SCOPE_NOTE
+        if role_prompt:
+            prompt += "\n" + role_prompt
         self.messages: list[dict] = [{"role": "system", "content": prompt}]
         self.on_tool = on_tool
+        self.tool_names = tool_names
+        self.use_tools = use_tools
+
+    def _schemas(self) -> list[dict]:
+        if not self.use_tools:
+            return []
+        names = self.tool_names
+        return [t.schema() for n, t in REGISTRY.items() if names is None or n in names]
 
     def ask(self, text: str) -> str:
         experience = default_memory().context_for(text)
         content = text if not experience else f"{text}\n\n[Relevant experience]\n{experience}"
         self.messages.append({"role": "user", "content": content})
-        schemas = [t.schema() for t in REGISTRY.values()]
+        schemas = self._schemas()
+        allowed = {sc["function"]["name"] for sc in schemas}
 
         for _ in range(self.cfg.max_tool_rounds):
-            msg = self.llm.chat(self.messages, tools=schemas)
+            msg = self.llm.chat(self.messages, tools=schemas or None)
             self.messages.append(msg)
             calls = msg.get("tool_calls") or []
             if not calls:
@@ -60,7 +75,7 @@ class Agent:
             for call in calls:
                 fn = call.get("function", {})
                 name, args = fn.get("name"), fn.get("arguments", {})
-                tool = REGISTRY.get(name)
+                tool = REGISTRY.get(name) if name in allowed else None
                 try:
                     result = tool.call(args) if tool else f"Unknown tool {name}"
                 except Exception as e:  # report tool errors back to the model

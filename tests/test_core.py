@@ -194,3 +194,37 @@ def test_mcp_client_against_own_server(tmp_path, monkeypatch):
             del REGISTRY[k]
     assert not mcp.needs_confirmation({"name": "read_tag", "annotations": {"readOnlyHint": True}}, False)
     assert mcp.needs_confirmation({"name": "write_tag", "annotations": {"readOnlyHint": True}}, True)
+
+
+def test_project_team_with_mock_model(tmp_path):
+    from factory_ai import team
+
+    class Mock:
+        def __init__(self):
+            self.seen = []
+
+        def chat(self, messages, tools=None):
+            system, last = messages[0]["content"], messages[-1]
+            self.seen.append((system.split("You are the ")[-1].split(" in a")[0], [t["function"]["name"] for t in tools or []]))
+            if last["role"] == "tool":
+                return {"role": "assistant", "content": "Takt is 2.52 s. Open questions: bottle size."}
+            if "Plan the work" in last["content"]:
+                return {"role": "assistant", "content": 'Plan: [{"role": "process_engineer", "task": "size the line"},'
+                                                        ' {"role": "design_engineer", "task": "layout"}, {"role": "nobody", "task": "x"}]'}
+            if "Process / Production Engineer" in system and "size the line" in last["content"]:
+                return {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "takt_time", "arguments": {
+                    "demand_units": 20000, "shifts": 2, "hours_per_shift": 8, "break_min_per_shift": 60}}}]}
+            return {"role": "assistant", "content": "ok"}
+
+    roles = team.load_roles()
+    assert {"project_manager", "consultant", "process_engineer", "electrical_engineer"} <= set(roles)
+    mock = Mock()
+    res = team.run_team("20,000 bottles/day juice line", client=mock)
+    assert [p["role"] for p in res["plan"]] == ["process_engineer", "design_engineer"]  # unknown role dropped
+    titles = [e["title"] for e in res["entries"]]
+    assert titles[0].startswith("Project Manager") and "Senior Consultant" in titles and titles[-1].endswith("summary")
+    assert "2.52" in res["entries"][1]["output"]
+    # the design engineer only ever sees its own discipline's tools
+    design_tools = {t for who, tools in mock.seen if who.startswith("Mechanical") for t in tools}
+    assert "layout_line" in design_tools and "roi" not in design_tools
+    assert Path(res["report"]).exists()
