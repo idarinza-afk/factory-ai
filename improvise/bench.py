@@ -86,7 +86,8 @@ def grade(item: dict, answer: str, tools_called: list[str]) -> dict:
     results = []
     found = numbers_in(answer)
     for check, exp in expected_values(item):
-        ok = _number_ok(exp, found, check.get("rel_tol", 0.01), check.get("percent_ok", False))
+        alts = [exp] + [float(a) for a in check.get("also_ok", [])]
+        ok = any(_number_ok(e, found, check.get("rel_tol", 0.01), check.get("percent_ok", False)) for e in alts)
         results.append({"check": check.get("ref_path", "value"), "expected": exp, "ok": ok})
     low = answer.lower()
     for group in item.get("must_include_any", []):

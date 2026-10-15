@@ -53,7 +53,8 @@ def conveyor_sizing(length_m: float, rate_per_min: float, pitch_mm: float, produ
 
 @tool
 def pneumatic_cylinder(bore_mm: float, stroke_mm: float, pressure_bar: float = 6, rod_mm: float = 0,
-                       cycles_per_min: float = 0, required_force_N: float = 0, load_factor: float = 0.7) -> dict:
+                       cycles_per_min: float = 0, required_force_N: float = 0, load_factor: float = 0.7,
+                       quantity: int = 1) -> dict:
     """Double-acting cylinder: theoretical/usable force and free-air consumption; checks a required force.
 
     Args:
@@ -64,6 +65,7 @@ def pneumatic_cylinder(bore_mm: float, stroke_mm: float, pressure_bar: float = 6
         cycles_per_min: double strokes per minute for air consumption
         required_force_N: force the application needs (0 = no check)
         load_factor: usable share of theoretical force (dynamic ~0.5-0.7, static ~0.8), default 0.7
+        quantity: number of identical cylinders (air total is for all of them), default 1
     """
     rod = rod_mm or 0.3 * bore_mm
     a_ext = math.pi * (bore_mm / 1000) ** 2 / 4
@@ -74,7 +76,9 @@ def pneumatic_cylinder(bore_mm: float, stroke_mm: float, pressure_bar: float = 6
     nl_per_cycle = (a_ext + a_ret) * stroke_mm / 1000 * ratio * 1000
     res = {"force_extend_N": round(f_ext, 1), "force_retract_N": round(f_ret, 1),
            "usable_extend_N": round(f_ext * load_factor, 1), "air_NL_per_cycle": round(nl_per_cycle, 3),
-           "air_NL_per_min": round(nl_per_cycle * cycles_per_min, 2)}
+           "air_NL_per_min": round(nl_per_cycle * cycles_per_min, 2),
+           "quantity": quantity, "air_NL_per_min_all_cylinders": round(nl_per_cycle * cycles_per_min * quantity, 2),
+           "next_step": "Add blow-offs, vacuum generators and other consumers to air_NL_per_min_all_cylinders for the machine total."}
     if required_force_N:
         min_bore = math.sqrt(4 * required_force_N / (load_factor * p * math.pi)) * 1000
         std = [8, 10, 12, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320]
