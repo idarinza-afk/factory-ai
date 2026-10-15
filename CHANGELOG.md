@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.8 — 2026-10-16
+### Added
+- Flowchart first: `make_flowchart` (Mermaid + HTML preview, structure check) and the rule that new processes,
+  sequences and control logic start with a flowchart the user approves.
+- Machine manuals: `improvise ingest <pdf|folder>`, alarm-code index and `lookup_alarm_code`; skill read-machine-manual.
+- Multilingual requests: engineering glossary (Thai, Chinese, Japanese, Vietnamese, Indonesian/Malay, Korean, German,
+  Spanish) for tool routing, skills and knowledge search; multilingual benchmark questions.
+- Pro: ladder logic generation (`plc_generate_ladder`, step-bit pattern, double-coil check) and skills
+  ladder-logic, machine-troubleshooting, plc-io-signal-diagnosis.
+### Changed
+- Machine lists: model, supplier and price columns are always left for the engineer; a "Data status" column marks
+  AI-filled rows "to confirm with supplier".
+
 ## v0.7 — 2026-10-16
 ### Added
 - 20 more engineering skills (38 total) and calculators: drive_torque, shaft_diameter, pipe_size, air_receiver,

@@ -348,3 +348,38 @@ def test_more_engineering_calcs():
     assert cooling_load(1000, 20, -18, 3.6, -1, 250, 1.8)["product_load_kW"] == pytest.approx(98.94, abs=0.02)
     assert process_capability([500, 501, 499, 502, 500, 498, 501, 500, 499, 500], 495, 505)["Cpk"] == 1.44
     assert staffing(6, 2)["total_headcount"] == 16
+
+
+def test_flowchart():
+    from improvise.flowchart import make_flowchart
+    steps = [{"id": "s", "text": "Start", "type": "start", "next": ["c"]},
+             {"id": "c", "text": "Product at sensor?", "type": "decision", "next": ["r", "c"], "labels": ["yes", "no"]},
+             {"id": "r", "text": "Run conveyor 2", "type": "process", "next": ["e"]},
+             {"id": "e", "text": "End", "type": "end"}]
+    r = make_flowchart("Separator test", steps)
+    assert r["problems"] == [] and Path(r["mermaid_file"]).read_text().startswith("flowchart TD")
+    assert '-->|"yes"|' in Path(r["mermaid_file"]).read_text()
+    bad = make_flowchart("bad", [{"id": "a", "text": "x", "type": "decision", "next": ["zz"]}])["problems"]
+    assert any("unknown step" in p for p in bad) and any("no start" in p for p in bad)
+
+
+def test_manual_ingest_and_alarm_lookup(tmp_path):
+    from improvise.manuals import ingest, lookup_alarm_code
+    from improvise.knowledge import default_kb
+    m = tmp_path / "TS200.txt"
+    m.write_text("Tray sealer TS-200 manual\nSealing temperature 160-180 C.\n\nAlarm list\nE12: Sealing film broken - check film path and splice\nAL-305 Heater over temperature, check thermocouple\n", encoding="utf-8")
+    r = ingest(m, "Tray sealer TS-200")[0]
+    assert r["ingested"] and r["alarm_codes_found"] == 2
+    hit = lookup_alarm_code("E 12")[0]
+    assert hit["code"] == "E12" and "film" in hit["text"]
+    assert lookup_alarm_code("AL305", "ts-200")[0]["page"] == 1
+    assert any("TS-200" in body for _, body in default_kb().search("TS-200 sealing temperature"))
+
+
+def test_multilingual_routing():
+    from improvise.lang import expand
+    from improvise.skills import relevant_skills
+    for q in ["ออกแบบสายพานและมอเตอร์ ความเร็ว 60 ชิ้นต่อนาที", "设计输送带和电机", "băng tải và động cơ"]:
+        names = [s.name for s in relevant_skills(expand(q))]
+        assert "conveyor-design" in names, (q, names)
+    assert "alarm" in expand("เครื่องขึ้นอลาร์ม E12")

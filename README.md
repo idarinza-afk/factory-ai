@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.7 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.8 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![Improvise calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +16,17 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.8 — 2026-10-16**
+- 🗺️ **Flowchart first.** For any new process, machine sequence or control logic without a given workflow,
+  Improvise draws a flowchart (Mermaid + HTML preview) and waits for your approval before building anything.
+- 📘 **Reads machine manuals.** `improvise ingest manual.pdf` adds manuals to local knowledge and indexes alarm
+  codes; ask "what does E12 mean on the tray sealer?" and get the meaning with the page.
+- 🌏 **Understands requests in many languages** — Thai, Chinese, Japanese, Vietnamese, Indonesian/Malay, Korean,
+  German, Spanish — with an engineering glossary for routing to the right tools and skills.
+- 📋 **Machine lists never contain invented models, suppliers or prices**; AI-filled rows are marked "to confirm".
+- **Pro:** ladder logic generation, a PLC scan simulator to test sequences before they reach a PLC, and
+  troubleshooting skills for diagnosing machines from alarms and I/O states.
 
 **v0.7 — 2026-10-16**
 - 🛠️ **38 engineering skills** (was 18): motor & drive selection, gearboxes and shafts, steam & heating,

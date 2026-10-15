@@ -9,6 +9,7 @@
   improvise bench [--model m] [--compare old.json]   score a model on engineering questions
   improvise team [--project name]        talk to your Project Manager, who builds and leads a team
   improvise team "brief..." | team --list
+  improvise ingest <manual.pdf | folder>  read machine manuals into local knowledge
   improvise connect [list | add <name> | remove <name>]  plug into FreeCAD, Excel, Grafana, OPC UA...
   improvise backup [list | restore <zip>]        your data, backed up daily automatically
   improvise selftest | update [--rollback]       safe self-update that rolls back if broken
@@ -322,6 +323,12 @@ def cmd_team(args) -> None:
             team.save()
 
 
+def cmd_ingest(args) -> None:
+    from .manuals import ingest
+    for r in ingest(args.path, args.name):
+        _print(r)
+
+
 def cmd_connect(args) -> None:
     from . import connectors as c
     if args.action == "add":
@@ -476,6 +483,11 @@ def main(argv: list[str] | None = None) -> None:
     tm.add_argument("--list", action="store_true", help="list the role catalogue and saved projects")
     tm.add_argument("-v", "--verbose", action="store_true", help="show tool calls")
     tm.set_defaults(func=cmd_team)
+
+    ig = sub.add_parser("ingest", help="read machine manuals (PDF/TXT/MD file or folder) into local knowledge")
+    ig.add_argument("path")
+    ig.add_argument("--name", help="machine / manual name")
+    ig.set_defaults(func=cmd_ingest)
 
     cn = sub.add_parser("connect", help="plug Improvise into other software (FreeCAD, Excel, Grafana, OPC UA...)")
     cn.add_argument("action", nargs="?", choices=["list", "add", "remove"], default="list")

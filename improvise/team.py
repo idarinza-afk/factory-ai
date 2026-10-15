@@ -165,7 +165,9 @@ class ProjectTeam:
                 "owner talks to. You lead a team whose members and responsibilities were defined by the owner:\n"
                 f"{self.describe()}\n"
                 "Delegate work to the members, never do a member's calculations yourself, report results clearly, "
-                "and ask the owner when a decision or missing information is needed.")
+                "and ask the owner when a decision or missing information is needed. If the owner has not given a "
+                "process flow or workflow, have one drawn as a flowchart first and get the owner's approval before "
+                "detailed design, documents or control logic.")
 
     def propose(self, brief: str, cfg=None, client=None) -> dict[str, dict]:
         """PM suggests positions for the project. Nothing is applied until the user accepts."""

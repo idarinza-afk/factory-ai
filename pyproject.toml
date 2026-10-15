@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "improvise"
-version = "0.7.0"
+version = "0.8.0"
 description = "Local AI assistant for production line design, engineering calculations and documents"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,8 +13,8 @@ authors = [{ name = "idarinza-afk" }]
 dependencies = []
 
 [project.optional-dependencies]
-docs = ["openpyxl>=3.1", "python-docx>=1.1"]
-all = ["openpyxl>=3.1", "python-docx>=1.1"]
+docs = ["openpyxl>=3.1", "python-docx>=1.1", "pypdf>=4"]
+all = ["openpyxl>=3.1", "python-docx>=1.1", "pypdf>=4"]
 dev = ["pytest>=8"]
 
 [project.scripts]

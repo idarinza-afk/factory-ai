@@ -29,17 +29,20 @@
 ### v0.7 (done)
 - 38 engineering skills, more calculators, fixes from real tests
 
-### v0.8
+### v0.8 (done)
+- Flowchart first, manual ingest + alarm lookup, multilingual routing
+
+### v0.9
 - Desktop/web UI (chat + forms + file previews)
 - Quotation / proposal package: 2D drawing, 3D views, machine spec, machine list in one bundle
 - Utility calculator (power, compressed air, water, steam)
 - A3 layout drawing with title block, DXF export; 3D placement script for Blender/FreeCAD
 
-### v0.9
+### v1.0
 - Embedding-based search, PDF/datasheet ingestion with OCR
 - Fine-tune pipeline script (LoRA -> GGUF -> Ollama)
 
-### v1.0+
+### v1.1+
 - Community dataset repo + CI leak scanner, quarterly Community LoRA
 - Federated LoRA training
 

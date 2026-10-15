@@ -1,3 +1,3 @@
 """Improvise: a local AI assistant for production engineering that improves with every project."""
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"

@@ -30,7 +30,8 @@
       "buffer_size",
       "oee",
       "recall_experience",
-      "search_knowledge"
+      "search_knowledge",
+      "make_flowchart"
     ]
   },
   "design_engineer": {
@@ -39,7 +40,8 @@
     "tools": [
       "layout_line",
       "search_knowledge",
-      "recall_experience"
+      "recall_experience",
+      "make_flowchart"
     ]
   },
   "electrical_engineer": {
@@ -55,14 +57,17 @@
   "automation_engineer": {
     "title": "Automation / PLC Engineer",
     "pro": true,
-    "focus": "Control philosophy, I/O list, sequences as state machines, PLC program structure with standard function blocks, HMI concept. Generated code is a draft for review and simulation.",
+    "focus": "Control philosophy, flowchart first, I/O list, sequences as state machines, PLC code as Structured Text or Ladder with standard function blocks, alarms and HMI concept, troubleshooting from alarms and I/O. Generated code is a draft for review and simulation.",
     "tools": [
       "plc_io_list",
       "plc_generate_sequence",
       "plc_check",
       "plc_function_blocks",
       "plc_compile",
-      "search_knowledge"
+      "search_knowledge",
+      "make_flowchart",
+      "plc_generate_ladder",
+      "lookup_alarm_code"
     ]
   },
   "it_iot_engineer": {

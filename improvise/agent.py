@@ -23,10 +23,14 @@ Rules:
   the engineer's confirmed rules; confirmed rules override general knowledge.
 - Use search_knowledge for reference material and say which source you used.
 - Leave prices you do not know blank; never invent prices or supplier data.
+- FLOWCHART FIRST: for a new process, machine sequence, control logic or workflow where the user has not
+  given a flowchart, first draw one with make_flowchart, show it, and ask the user to approve or correct
+  it. Only after approval write PLC code, programs or detailed documents.
 - When a job needs a program (simulation, data conversion, a chart, a custom calculation),
   write it with workspace_write, run it with run_python, read the output and fix errors.
   Keep scripts small and readable, standard library first.
-- Answer in the user's language.
+- Answer in the language the user wrote in (Thai, English, Chinese, Japanese, Vietnamese, ...);
+  keep units, tag names and code identifiers in their standard form.
 """
 
 FREE_SCOPE_NOTE = """
@@ -58,7 +62,7 @@ class Agent:
         self.tool_names = tool_names
         self.use_tools = use_tools
 
-    ALWAYS = ("use_skill", "recall_experience", "search_knowledge")
+    ALWAYS = ("use_skill", "recall_experience", "search_knowledge", "make_flowchart")
 
     def _select_tools(self, text: str) -> set[str]:
         """Small local models get confused by 30+ tools. Offer the ones that match the
@@ -69,7 +73,8 @@ class Agent:
         limit = self.cfg.max_tools
         if self.tool_names is not None or len(names) <= limit:
             return set(names)
-        words = {w for w in re.findall(r"[a-z]{3,}", text.lower())}
+        from .lang import expand
+        words = {w for w in re.findall(r"[a-z]{3,}", expand(text).lower())}
         words |= {w[:-1] for w in words if w.endswith("s")}
 
         def score(n: str) -> int:
@@ -93,10 +98,11 @@ class Agent:
         content = text if not experience else f"{text}\n\n[Relevant experience]\n{experience}"
         # small models rarely look things up on their own: attach the best reference passages
         from .knowledge import default_kb
-        refs = default_kb().search(text, limit=2)
+        from .lang import expand
+        refs = default_kb().search(expand(text), limit=2)
         if self.skill_hints:
             from .skills import catalogue_prompt
-            content += catalogue_prompt(text)
+            content += catalogue_prompt(expand(text))
         if refs:
             content += "\n\n[Reference knowledge - prefer this over general assumptions]\n" + "\n---\n".join(
                 f"({src}) {body[:900]}" for src, body in refs)

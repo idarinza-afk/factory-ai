@@ -67,10 +67,10 @@ def make_machine_list(project: str, machines: list[dict]) -> dict:
 
     Args:
         project: project or line name
-        machines: list of {"name", "model" (opt), "qty", "capacity" (opt), "power_kw" (opt), "dimensions_mm" (opt), "supplier" (opt), "remark" (opt)} - price columns are always left blank for the engineer
+        machines: list of {"name", "qty", "capacity" (opt), "power_kw" (opt), "dimensions_mm" (opt), "remark" (opt)} - model, supplier and price columns are always left blank for the engineer
     """
     headers = ["No.", "Machine", "Model", "Qty", "Capacity", "Power (kW)", "Dimensions L×W×H (mm)",
-               "Supplier", "Unit price", "Total price", "Remark"]
+               "Supplier", "Unit price", "Total price", "Remark", "Data status"]
     rows, total_kw = [], 0.0
     for i, m in enumerate(machines, start=1):
         qty = m.get("qty", 1)
@@ -79,10 +79,12 @@ def make_machine_list(project: str, machines: list[dict]) -> dict:
         kw = m.get("power_kw", "")
         if isinstance(kw, (int, float)):
             total_kw += kw * qty
-        rows.append([i, m.get("name", ""), m.get("model", ""), qty, m.get("capacity", ""), kw,
-                     m.get("dimensions_mm", ""), m.get("supplier", ""), price if price is not None else "",
-                     total, m.get("remark", "")])
-    rows.append(["", "TOTAL CONNECTED LOAD", "", "", "", round(total_kw, 2), "", "", "", "", ""])
+        model = m.get("model", "") if PRICES_FROM_USER else ""      # model and supplier: engineer fills in
+        supplier = m.get("supplier", "") if PRICES_FROM_USER else ""
+        rows.append([i, m.get("name", ""), model, qty, m.get("capacity", ""), kw,
+                     m.get("dimensions_mm", ""), supplier, price if price is not None else "",
+                     total, m.get("remark", ""), "confirmed" if PRICES_FROM_USER else "to confirm with supplier"])
+    rows.append(["", "TOTAL CONNECTED LOAD", "", "", "", round(total_kw, 2), "", "", "", "", "", ""])
     path = _write_table(_out_dir() / f"{_safe(project)}_machine_list", f"Machine List - {project}", headers, rows)
     return {"file": str(path), "machines": len(machines), "total_power_kw": round(total_kw, 2)}
 
