@@ -17,11 +17,14 @@ class LLMError(RuntimeError):
 
 
 class OllamaClient:
-    def __init__(self, base_url: str, model: str, temperature: float = 0.2, timeout: int = 600):
+    def __init__(self, base_url: str, model: str, temperature: float = 0.2, timeout: int = 600,
+                 think: bool = False):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.temperature = temperature
         self.timeout = timeout
+        # Thinking models (e.g. Qwen3) answer far faster with thinking off; tools still do the maths.
+        self.think: bool | None = think
 
     def chat(self, messages: list[dict], tools: list[dict] | None = None) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -32,6 +35,8 @@ class OllamaClient:
         }
         if tools:
             payload["tools"] = tools
+        if self.think is not None:
+            payload["think"] = self.think
         req = urllib.request.Request(
             f"{self.base_url}/api/chat",
             data=json.dumps(payload).encode(),
@@ -40,6 +45,11 @@ class OllamaClient:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
                 data = json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            if self.think is not None and e.code == 400:  # model without a thinking switch
+                self.think = None
+                return self.chat(messages, tools)
+            raise LLMError(f"Ollama error {e.code}: {e.read()[:300]!r}") from e
         except urllib.error.URLError as e:
             raise LLMError(
                 f"Cannot reach Ollama at {self.base_url}. Is it running? "

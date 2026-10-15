@@ -9,6 +9,7 @@
   improvise bench [--model m] [--compare old.json]   score a model on engineering questions
   improvise team [--project name]        talk to your Project Manager, who builds and leads a team
   improvise team "brief..." | team --list
+  improvise skills [show <name> | new <name>]   packaged know-how loaded on demand
   improvise mcp serve | mcp tools        MCP server for other AIs / list tools from ~/.improvise/mcp.json
   improvise contribute [--secret "Customer A" ...]
   improvise doctor                       check the local setup
@@ -45,7 +46,8 @@ def cmd_chat(args) -> None:
         print(f"\n  ! {name} wants to run with {json.dumps(a, ensure_ascii=False)[:300]}")
         return input("    allow this action? [y/N] ").strip().lower() == "y"
 
-    mcp.CONFIRM = confirm
+    from . import safety
+    safety.CONFIRM = confirm
     mcp.connect_servers(log=lambda m: print(m, file=sys.stderr))
     agent = Agent(load(), on_tool=show if args.verbose else None)
     if args.question:
@@ -311,6 +313,18 @@ def cmd_team(args) -> None:
             team.save()
 
 
+def cmd_skills(args) -> None:
+    from .skills import load_skills, new_skill, skill_dirs, use_skill
+    if args.action == "show" and args.name:
+        print(use_skill(args.name))
+    elif args.action == "new" and args.name:
+        print(f"created {new_skill(args.name)} - edit it, it is picked up automatically")
+    else:
+        for s in load_skills().values():
+            print(f"{s.name:30s} {s.description[:95]}")
+        print("\nskill folders: " + ", ".join(str(d) for d in skill_dirs()))
+
+
 def cmd_mcp(args) -> None:
     from . import mcp
     if args.action == "serve":
@@ -404,6 +418,11 @@ def main(argv: list[str] | None = None) -> None:
     tm.add_argument("--roles", help="one-shot: keep only these positions, e.g. process_engineer,design_engineer")
     tm.add_argument("--list", action="store_true", help="list the role catalogue and saved projects")
     tm.set_defaults(func=cmd_team)
+
+    sk = sub.add_parser("skills", help="list, show or create skills")
+    sk.add_argument("action", nargs="?", choices=["list", "show", "new"], default="list")
+    sk.add_argument("name", nargs="?")
+    sk.set_defaults(func=cmd_skills)
 
     mc = sub.add_parser("mcp", help="MCP: serve improvise to other AIs, or list connected MCP tools")
     mc.add_argument("action", choices=["serve", "tools"])

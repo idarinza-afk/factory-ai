@@ -184,11 +184,13 @@ def test_mcp_client_against_own_server(tmp_path, monkeypatch):
         n = mcp.connect_servers(cfg)
         assert n > 5
         # read-only-looking calc tool still needs confirmation because the server did not declare it read-only
-        mcp.CONFIRM = lambda name, args: False
+        from improvise import safety
+        safety.CONFIRM = lambda name, args: False
         assert "Not executed" in REGISTRY["self__takt_time"].call({"demand_units": 3600, "shifts": 1, "hours_per_shift": 1})
-        mcp.CONFIRM = lambda name, args: True
+        safety.CONFIRM = lambda name, args: True
         assert "takt_time_s" in REGISTRY["self__takt_time"].call({"demand_units": 3600, "shifts": 1, "hours_per_shift": 1})
     finally:
+        safety.CONFIRM = lambda name, args: False
         mcp.close_all()
         for k in [k for k in REGISTRY if k.startswith("self__")]:
             del REGISTRY[k]
@@ -245,3 +247,44 @@ def test_project_team_pm_led(tmp_path):
     assert again.members["line_lead"]["focus"] == "Owns capacity and takt for this customer"
     assert again.pm_history[-1]["content"] == reply
     assert "juice_line_a" in ProjectTeam.list_projects()
+
+
+def test_coding_workspace_and_run(tmp_path):
+    from improvise import safety
+    from improvise.coding import run_python, workspace_list, workspace_read, workspace_write
+    workspace_write("sim/hello.py", "import sys\nprint('takt', 50400/20000, *sys.argv[1:])\n")
+    assert "sim/hello.py" in [p.replace("\\\\", "/") for p in workspace_list()]
+    assert "takt" in workspace_read("sim/hello.py")
+    with pytest.raises(ValueError):
+        workspace_write("../escape.txt", "x")
+    assert run_python("sim/hello.py")["ran"] is False          # no confirmation -> not executed
+    safety.CONFIRM = lambda n, a: True
+    try:
+        r = run_python("sim/hello.py", ["ok"])
+    finally:
+        safety.CONFIRM = lambda n, a: False
+    assert r["exit_code"] == 0 and "takt 2.52 ok" in r["stdout"]
+
+
+def test_engineering_calcs_and_skills():
+    from improvise.calc.engineering import conveyor_sizing, heat_load, pneumatic_cylinder, pump_power, utilities_summary
+    c = conveyor_sizing(length_m=10, rate_per_min=60, pitch_mm=200, product_mass_kg=0.5)
+    assert c["speed_m_per_min"] == 12.0 and c["selected_motor_kW"] >= c["required_motor_kW"]
+    p = pneumatic_cylinder(bore_mm=50, stroke_mm=100, pressure_bar=6, required_force_N=600)
+    assert p["force_extend_N"] == pytest.approx(1178.1, abs=0.5) and p["ok"] and p["suggested_standard_bore_mm"] == 50
+    assert heat_load(1000, 4.19, 60, loss_factor=1)["heat_load_kW"] == pytest.approx(69.83, abs=0.01)
+    assert pump_power(36, 30, efficiency=1, service_factor=1)["hydraulic_kW"] == pytest.approx(2.943, abs=0.001)
+    u = utilities_summary([{"name": "a", "qty": 2, "power_kw": 10, "air_NL_min": 100}], diversity_factor=1, air_margin=1)
+    assert u["connected_load_kW"] == 20 and u["compressed_air_NL_min"] == 200
+
+    from improvise.skills import catalogue_prompt, load_skills, use_skill
+    skills = load_skills()
+    assert len(skills) >= 15 and "proposal-package" in skills
+    assert "BLANK" in use_skill("proposal-package")
+    assert "Unknown skill" in use_skill("nope")
+    assert "conveyor-design" in catalogue_prompt()
+    from improvise.tools import load_all
+    reg = load_all()
+    for s in skills.values():   # every tool a skill names must exist (Pro tools excepted)
+        for t in s.tools:
+            assert t in reg or t.startswith(("plc_", "iot_")) or t == "search_knowledge", (s.name, t)

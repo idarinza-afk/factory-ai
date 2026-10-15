@@ -137,9 +137,13 @@ class ProjectTeam:
         return "\n".join(lines)
 
     # ---------------------------------------------------------------- LLM helpers
-    def _agent(self, role_text: str, tools: list[str] | None, use_tools: bool, cfg, client):
+    def _agent(self, role_text: str, tools: list[str] | None, use_tools: bool, cfg, client, member: dict | None = None):
+        from dataclasses import replace
         from .agent import Agent
-        a = Agent(cfg, role_prompt=role_text, tool_names=tools, use_tools=use_tools)
+        from .config import _env
+        # a position can run on its own model, e.g. a coder model for the Software Engineer
+        model = (member or {}).get("model") or (_env((member or {}).get("model_env", "")) if (member or {}).get("model_env") else None)
+        a = Agent(replace(cfg, model=model) if model else cfg, role_prompt=role_text, tool_names=tools, use_tools=use_tools)
         if client is not None:
             a.llm = client
         return a
@@ -176,6 +180,7 @@ class ProjectTeam:
                 continue
             base = cat.get(k, {})
             proposal[k] = {
+                **({"model_env": base["model_env"]} if base.get("model_env") else {}),
                 "title": val.get("title") or base.get("title") or k.replace("_", " ").title(),
                 "focus": val.get("focus") or base.get("focus", ""),
                 "tools": [t for t in (base.get("tools") or val.get("tools") or []) if t in tools],
@@ -210,7 +215,7 @@ class ProjectTeam:
         for step in plan:
             m = workers[step["member"]]
             progress(f"  [{m['title']}] {str(step.get('task', ''))[:80]}")
-            agent = self._agent(role_prompt(m), m.get("tools") or [], bool(m.get("tools")), cfg, client)
+            agent = self._agent(role_prompt(m), m.get("tools") or [], bool(m.get("tools")), cfg, client, m)
             out = agent.ask(f"{board_ctx}\n\nOWNER REQUEST:\n{request}\n\nYOUR TASK FROM THE PM:\n{step.get('task', '')}")
             self.board.append({"who": step["member"], "title": m["title"], "task": step.get("task", ""),
                                "output": out, "time": time.strftime("%Y-%m-%d %H:%M")})

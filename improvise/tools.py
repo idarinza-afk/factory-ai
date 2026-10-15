@@ -132,7 +132,7 @@ def load_plugins() -> dict[str, object]:
 
 def load_all() -> dict[str, Tool]:
     """Import every module that registers tools, then any installed plugins."""
-    from . import calc, documents, layout  # noqa: F401
+    from . import calc, coding, documents, layout, skills  # noqa: F401
     from .memory import register_memory_tools
 
     register_memory_tools()

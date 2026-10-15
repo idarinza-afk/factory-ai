@@ -25,4 +25,4 @@ factory-ai = "improvise.cli:main"  # old name, kept for compatibility
 include = ["improvise*"]
 
 [tool.setuptools.package-data]
-improvise = ["knowledge_base/*.md", "benchmarks/*.jsonl", "team_roles.json"]
+improvise = ["knowledge_base/*.md", "benchmarks/*.jsonl", "team_roles.json", "skill_library/*/SKILL.md"]

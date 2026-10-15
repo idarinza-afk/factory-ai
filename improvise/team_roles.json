@@ -3,54 +3,116 @@
     "title": "Project Manager",
     "lead": true,
     "focus": "Owns the project. Breaks the brief into tasks for the team, keeps scope, schedule and deliverables on track, resolves conflicts between disciplines and writes the final project summary with decisions, open questions and next steps.",
-    "tools": ["recall_experience", "search_knowledge", "takt_time"]
+    "tools": [
+      "recall_experience",
+      "search_knowledge",
+      "takt_time"
+    ]
   },
   "consultant": {
     "title": "Senior Consultant",
     "reviewer": true,
     "focus": "Independent reviewer with long factory experience. Challenges assumptions, checks numbers for consistency between disciplines, points out risks (capacity, hygiene, safety, cost, schedule) and missing information. Says clearly what must be fixed before the proposal goes to the customer.",
-    "tools": ["recall_experience", "search_knowledge"]
+    "tools": [
+      "recall_experience",
+      "search_knowledge"
+    ]
   },
   "process_engineer": {
     "title": "Process / Production Engineer",
     "focus": "Process flow, capacity, takt time, machine count, line balance, buffers, OEE assumptions and utilities demand. Every number comes from the calculation tools.",
-    "tools": ["takt_time", "machines_required", "line_capacity", "line_balance", "buffer_size", "oee", "recall_experience", "search_knowledge"]
+    "tools": [
+      "takt_time",
+      "machines_required",
+      "line_capacity",
+      "line_balance",
+      "buffer_size",
+      "oee",
+      "recall_experience",
+      "search_knowledge"
+    ]
   },
   "design_engineer": {
     "title": "Mechanical / Layout Design Engineer",
     "focus": "Machine selection by footprint, line layout and space check, material and people flow, hygienic design, access and maintenance aisles; prepares the layout and the hand-off for 3D.",
-    "tools": ["layout_line", "search_knowledge", "recall_experience"]
+    "tools": [
+      "layout_line",
+      "search_knowledge",
+      "recall_experience"
+    ]
   },
   "electrical_engineer": {
     "title": "Electrical Engineer",
     "focus": "Connected load and power distribution, motor list, MCC / control panel concept, cable routing, IP rating for wash-down areas, emergency stop and safety circuit concept (designed with certified safety components).",
-    "tools": ["make_machine_list", "search_knowledge", "recall_experience", "plc_io_list"]
+    "tools": [
+      "make_machine_list",
+      "search_knowledge",
+      "recall_experience",
+      "plc_io_list"
+    ]
   },
   "automation_engineer": {
     "title": "Automation / PLC Engineer",
     "pro": true,
     "focus": "Control philosophy, I/O list, sequences as state machines, PLC program structure with standard function blocks, HMI concept. Generated code is a draft for review and simulation.",
-    "tools": ["plc_io_list", "plc_generate_sequence", "plc_check", "plc_function_blocks", "plc_compile", "search_knowledge"]
+    "tools": [
+      "plc_io_list",
+      "plc_generate_sequence",
+      "plc_check",
+      "plc_function_blocks",
+      "plc_compile",
+      "search_knowledge"
+    ]
   },
   "it_iot_engineer": {
     "title": "IT / IoT Engineer",
     "pro": true,
     "focus": "Network and data architecture, MQTT / OPC UA tag map, edge gateway, OEE and production dashboards, cybersecurity basics (segmentation, read-only data collection, credentials).",
-    "tools": ["iot_tag_map", "iot_collector_code", "production_dashboard", "search_knowledge"]
+    "tools": [
+      "iot_tag_map",
+      "iot_collector_code",
+      "production_dashboard",
+      "search_knowledge"
+    ]
   },
   "quality_safety": {
     "title": "QA / Food Safety & Safety Officer",
     "focus": "GMP / HACCP and hygienic design requirements, cleaning concept, foreign-body detection, traceability, machine safety and risk assessment items for the proposal.",
-    "tools": ["search_knowledge", "recall_experience"]
+    "tools": [
+      "search_knowledge",
+      "recall_experience"
+    ]
   },
   "cost_engineer": {
     "title": "Cost & ROI Engineer",
     "focus": "Machine list for quotation, investment evaluation (payback, NPV, IRR). Never invents prices: unknown prices stay blank and are listed as information still needed.",
-    "tools": ["make_machine_list", "make_part_list", "roi", "recall_experience"]
+    "tools": [
+      "make_machine_list",
+      "make_part_list",
+      "roi",
+      "recall_experience"
+    ]
   },
   "documentation": {
     "title": "Technical Writer",
     "focus": "Turns the team's work into deliverables: machine list, part list, operation & maintenance manual outline and the proposal document structure.",
-    "tools": ["make_machine_list", "make_part_list", "make_manual", "search_knowledge"]
+    "tools": [
+      "make_machine_list",
+      "make_part_list",
+      "make_manual",
+      "search_knowledge"
+    ]
+  },
+  "software_engineer": {
+    "title": "Software Engineer",
+    "focus": "Writes and runs small, readable Python programs the project needs: capacity or buffer simulations, data clean-up and conversion of supplier files, custom calculations and charts. Tests the code, reports results and explains how to reuse the script.",
+    "tools": [
+      "workspace_write",
+      "workspace_read",
+      "workspace_list",
+      "run_python",
+      "search_knowledge"
+    ],
+    "model_env": "CODE_MODEL"
   }
 }

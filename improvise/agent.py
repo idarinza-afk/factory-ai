@@ -22,6 +22,9 @@ Rules:
   the engineer's confirmed rules; confirmed rules override general knowledge.
 - Use search_knowledge for reference material and say which source you used.
 - Leave prices you do not know blank; never invent prices or supplier data.
+- When a job needs a program (simulation, data conversion, a chart, a custom calculation),
+  write it with workspace_write, run it with run_python, read the output and fix errors.
+  Keep scripts small and readable, standard library first.
 - Answer in the user's language.
 """
 
@@ -41,11 +44,13 @@ class Agent:
         self.cfg = cfg
         load_all()
         register_kb_tool()
-        self.llm = OllamaClient(cfg.ollama_url, cfg.model, cfg.temperature)
+        self.llm = OllamaClient(cfg.ollama_url, cfg.model, cfg.temperature, think=cfg.think)
         from .tools import PLUGINS
         prompt = SYSTEM_PROMPT + "".join(getattr(m, "PROMPT", "") for m in PLUGINS.values())
         if "pro" not in PLUGINS:
             prompt += FREE_SCOPE_NOTE
+        from .skills import catalogue_prompt
+        prompt += catalogue_prompt()
         if role_prompt:
             prompt += "\n" + role_prompt
         self.messages: list[dict] = [{"role": "system", "content": prompt}]

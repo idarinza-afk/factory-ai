@@ -36,6 +36,7 @@ class Config:
     ollama_url: str = field(default_factory=lambda: os.environ.get("OLLAMA_URL", "http://localhost:11434"))
     model: str = field(default_factory=lambda: _env("MODEL", "qwen2.5:14b"))
     temperature: float = 0.2
+    think: bool = field(default_factory=lambda: str(_env("THINK", "0")).lower() in ("1", "true", "yes"))
     max_tool_rounds: int = 8
 
     @property
