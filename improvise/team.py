@@ -76,6 +76,14 @@ class ProjectTeam:
     board: list[dict] = field(default_factory=list)         # {who, title, task, output, time}
     pm_history: list[dict] = field(default_factory=list)    # PM conversation with the user
     _on_tool: Any = field(default=None, repr=False, compare=False)
+    _current_calls: Any = field(default=None, repr=False, compare=False)
+
+    def _record(self, name, args, result):
+        if self._current_calls is not None:
+            r = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, default=str)
+            self._current_calls.append(f"{name} -> {r[:300]}")
+        if self._on_tool:
+            self._on_tool(name, args, result)
 
     # ---------------------------------------------------------------- persistence
     @staticmethod
@@ -147,7 +155,7 @@ class ProjectTeam:
         mcfg = replace(cfg, max_tool_rounds=min(cfg.max_tool_rounds, 5))  # keep each member's turn short
         if model:
             mcfg = replace(mcfg, model=model)
-        a = Agent(mcfg, role_prompt=role_text, tool_names=tools, use_tools=use_tools, on_tool=self._on_tool)
+        a = Agent(mcfg, role_prompt=role_text, tool_names=tools, use_tools=use_tools, on_tool=self._record)
         if client is not None:
             a.llm = client
         return a
@@ -228,7 +236,11 @@ class ProjectTeam:
             m = workers[step["member"]]
             progress(f"  [{m['title']}] {str(step.get('task', ''))[:80]}")
             agent = self._agent(role_prompt(m), m.get("tools") or [], bool(m.get("tools")), cfg, client, m)
+            calls: list[str] = []
+            self._current_calls = calls
             out = agent.ask(f"{board_ctx}\n\nOWNER REQUEST:\n{request}\n\nYOUR TASK FROM THE PM:\n{step.get('task', '')}")
+            if calls:  # facts the PM can rely on: what was actually computed or produced
+                out += "\n\n[Tool record] " + "; ".join(calls)
             self.board.append({"who": step["member"], "title": m["title"], "task": step.get("task", ""),
                                "output": out, "time": time.strftime("%Y-%m-%d %H:%M")})
             board_ctx = self._board_text()
@@ -238,14 +250,22 @@ class ProjectTeam:
                 progress(f"  [{m['title']}] reviewing")
                 agent = self._agent(role_prompt(m), m.get("tools") or [], bool(m.get("tools")), cfg, client)
                 out = agent.ask(f"{board_ctx}\n\nReview the latest work for the owner's request: {request}\n"
-                                "List inconsistencies, risks, missing information and what must change.")
+                                "Check in this order and say PASS or FAIL for each:\n"
+                                "1. Units: was the demand read correctly (per hour vs per day vs per shift)?\n"
+                                "2. Capacity: is the line output (after OEE) >= the required rate? Name the bottleneck.\n"
+                                "3. Is every number backed by a [Tool record]? Flag numbers that are not.\n"
+                                "4. Were any prices, model numbers, suppliers or power ratings invented?\n"
+                                "5. Do the documents claimed (drawings, 3D, lists) actually exist in a [Tool record]?\n"
+                                "Then list what must change before this goes to the customer.")
                 self.board.append({"who": k, "title": m["title"], "task": "review", "output": out,
                                    "time": time.strftime("%Y-%m-%d %H:%M")})
             board_ctx = self._board_text()
 
         progress("  [Project Manager] reporting")
         reply = pm.ask(f"{board_ctx}\n\nReport back to the owner on: {request}\n"
-                       "Use only numbers the team computed, name who did what, list decisions needed and next steps.")
+                       "Use only numbers backed by a [Tool record], name who did what, include every FAIL from the "
+                       "review as an open issue, never claim a drawing or document exists unless a [Tool record] shows "
+                       "the file, and list decisions needed and next steps.")
         self.pm_history += [{"role": "user", "content": request}, {"role": "assistant", "content": reply}]
         self.save()
         return reply

@@ -319,3 +319,19 @@ def test_connector_catalogue():
     assert r["entry"]["env"]["GRAFANA_URL"] == "http://x" and any("GRAFANA_SERVICE_ACCOUNT_TOKEN" in w for w in r["warnings"])
     assert set(connectors.installed()) == {"excel", "grafana"}
     assert connectors.remove("excel") and "excel" not in connectors.installed()
+
+
+def test_rate_takt_rules_and_no_ai_prices(tmp_path):
+    from improvise.calc.line import takt_from_rate
+    r = takt_from_rate(8000, 30)
+    assert r["takt_time_s_per_unit"] == 0.45 and r["packs_per_min"] == 4.44
+    from improvise.memory import Memory
+    m = Memory(tmp_path / "r.db")
+    rid = m.add_feedback("x", "y")
+    assert m.list_feedback()[0]["id"] == rid and m.delete_feedback(rid) and not m.search_feedback("y")
+    from improvise.documents import make_machine_list
+    import openpyxl
+    f = make_machine_list("P", [{"name": "Sealer", "qty": 2, "unit_price": 99999}])["file"]
+    if f.endswith(".xlsx"):
+        ws = openpyxl.load_workbook(f).active
+        assert all(c.value != 99999 for row in ws.iter_rows() for c in row)

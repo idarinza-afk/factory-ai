@@ -9,10 +9,10 @@ from ..tools import tool
 
 @tool
 def takt_time(demand_units: float, shifts: int, hours_per_shift: float, break_min_per_shift: float = 0) -> dict:
-    """Takt time (seconds per unit) needed to meet a demand over one production day.
+    """Takt time from a DAILY demand. If the demand is given per hour or per minute, use takt_from_rate instead.
 
     Args:
-        demand_units: units required per day
+        demand_units: units required per DAY (not per hour)
         shifts: number of shifts per day
         hours_per_shift: paid hours per shift
         break_min_per_shift: planned breaks/meals/cleaning per shift in minutes
@@ -29,6 +29,31 @@ def takt_time(demand_units: float, shifts: int, hours_per_shift: float, break_mi
         "required_rate_per_min": round(60 / takt, 2),
         "required_rate_per_hour": round(3600 / takt, 1),
     }
+
+
+@tool
+def takt_from_rate(rate_per_hour: float, units_per_pack: float = 1, shifts: int = 0, hours_per_shift: float = 0,
+                   break_min_per_shift: float = 0) -> dict:
+    """Takt time when the required rate is given per hour (e.g. 8,000 eggs/h); also packs per minute and daily output.
+
+    Args:
+        rate_per_hour: required good units per hour
+        units_per_pack: units per tray/case/pack, default 1
+        shifts: shifts per day (optional, for daily output)
+        hours_per_shift: hours per shift (optional)
+        break_min_per_shift: breaks per shift in minutes (optional)
+    """
+    if rate_per_hour <= 0:
+        raise ValueError("rate_per_hour must be > 0")
+    res = {"takt_time_s_per_unit": round(3600 / rate_per_hour, 3), "units_per_min": round(rate_per_hour / 60, 2),
+           "packs_per_hour": round(rate_per_hour / units_per_pack, 1),
+           "packs_per_min": round(rate_per_hour / units_per_pack / 60, 2),
+           "takt_time_s_per_pack": round(3600 * units_per_pack / rate_per_hour, 2)}
+    if shifts and hours_per_shift:
+        hours = shifts * (hours_per_shift - break_min_per_shift / 60)
+        res.update({"production_hours_per_day": round(hours, 2), "units_per_day": round(rate_per_hour * hours),
+                    "packs_per_day": round(rate_per_hour * hours / units_per_pack)})
+    return res
 
 
 @tool

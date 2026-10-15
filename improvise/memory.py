@@ -105,6 +105,15 @@ class Memory:
         self.conn.commit()
         return int(cur.lastrowid)
 
+    def delete_feedback(self, rule_id: int) -> bool:
+        cur = self.conn.execute("DELETE FROM feedback WHERE id=?", (rule_id,))
+        self.conn.execute("INSERT INTO feedback_fts(feedback_fts) VALUES('rebuild')")
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    def list_feedback(self) -> list[dict]:
+        return [dict(r) for r in self.conn.execute("SELECT id, topic, rule FROM feedback ORDER BY id")]
+
     # --- read ------------------------------------------------------------
     def search_cases(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
         rows = self.conn.execute(

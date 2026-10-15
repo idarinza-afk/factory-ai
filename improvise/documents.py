@@ -14,6 +14,9 @@ from pathlib import Path
 from .tools import tool
 
 
+PRICES_FROM_USER = False  # set True only by code paths where the user typed the prices themselves
+
+
 def _out_dir() -> Path:
     from .config import load
     return load().output_dir
@@ -64,14 +67,14 @@ def make_machine_list(project: str, machines: list[dict]) -> dict:
 
     Args:
         project: project or line name
-        machines: list of {"name", "model" (opt), "qty", "capacity" (opt), "power_kw" (opt), "dimensions_mm" (opt), "supplier" (opt), "unit_price" (opt), "remark" (opt)}
+        machines: list of {"name", "model" (opt), "qty", "capacity" (opt), "power_kw" (opt), "dimensions_mm" (opt), "supplier" (opt), "remark" (opt)} - price columns are always left blank for the engineer
     """
     headers = ["No.", "Machine", "Model", "Qty", "Capacity", "Power (kW)", "Dimensions L×W×H (mm)",
                "Supplier", "Unit price", "Total price", "Remark"]
     rows, total_kw = [], 0.0
     for i, m in enumerate(machines, start=1):
         qty = m.get("qty", 1)
-        price = m.get("unit_price")
+        price = m.get("unit_price") if PRICES_FROM_USER else None  # the AI never fills prices
         total = price * qty if isinstance(price, (int, float)) else ""
         kw = m.get("power_kw", "")
         if isinstance(kw, (int, float)):

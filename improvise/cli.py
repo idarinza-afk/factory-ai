@@ -122,6 +122,11 @@ def cmd_memory(args) -> None:
         _print(m.context_for(args.query) or "nothing found")
     elif args.action == "stats":
         _print(m.stats())
+    elif args.action == "rules":
+        for r in m.list_feedback():
+            print(f"#{r['id']:<4} [{r['topic']}] {r['rule']}")
+    elif args.action == "delrule":
+        print("deleted" if m.delete_feedback(args.id) else "no such rule")
     elif args.action == "export":
         n = m.export_finetune(args.out, only_verified=not args.all)
         print(f"wrote {n} training records to {args.out}")
@@ -446,6 +451,9 @@ def main(argv: list[str] | None = None) -> None:
     x = ms.add_parser("search")
     x.add_argument("query")
     ms.add_parser("stats")
+    ms.add_parser("rules")
+    x = ms.add_parser("delrule")
+    x.add_argument("id", type=int)
     x = ms.add_parser("export")
     x.add_argument("out")
     x.add_argument("--all", action="store_true", help="include unverified cases")

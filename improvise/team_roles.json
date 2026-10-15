@@ -20,8 +20,9 @@
   },
   "process_engineer": {
     "title": "Process / Production Engineer",
-    "focus": "Process flow, capacity, takt time, machine count, line balance, buffers, OEE assumptions and utilities demand. Every number comes from the calculation tools.",
+    "focus": "Process flow, capacity, takt time, machine count, line balance, buffers, OEE assumptions and utilities demand. Every number comes from the calculation tools. Check whether the demand is given per hour, per shift or per day before calculating.",
     "tools": [
+      "takt_from_rate",
       "takt_time",
       "machines_required",
       "line_capacity",
@@ -34,7 +35,7 @@
   },
   "design_engineer": {
     "title": "Mechanical / Layout Design Engineer",
-    "focus": "Machine selection by footprint, line layout and space check, material and people flow, hygienic design, access and maintenance aisles; prepares the layout and the hand-off for 3D.",
+    "focus": "Machine selection by footprint, line layout and space check, material and people flow, hygienic design, access and maintenance aisles; prepares the layout and the hand-off for 3D. Never invent machine dimensions: use the ones given or mark them as assumptions to confirm.",
     "tools": [
       "layout_line",
       "search_knowledge",
@@ -85,7 +86,7 @@
   },
   "cost_engineer": {
     "title": "Cost & ROI Engineer",
-    "focus": "Machine list for quotation, investment evaluation (payback, NPV, IRR). Never invents prices: unknown prices stay blank and are listed as information still needed.",
+    "focus": "Machine list for quotation, investment evaluation (payback, NPV, IRR). Never invents prices, model numbers, suppliers or power ratings: unknown values stay blank and are listed as information still needed.",
     "tools": [
       "make_machine_list",
       "make_part_list",
