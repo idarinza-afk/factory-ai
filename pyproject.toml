@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "factory-ai"
+version = "0.1.0"
+description = "Local AI assistant for production line design, engineering calculations and documents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "LicenseRef-Proprietary (license to be decided before public release)" }
+authors = [{ name = "idarinza-afk" }]
+dependencies = []
+
+[project.optional-dependencies]
+docs = ["openpyxl>=3.1", "python-docx>=1.1"]
+all = ["openpyxl>=3.1", "python-docx>=1.1"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+factory-ai = "factory_ai.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["factory_ai*"]
+
+[tool.setuptools.package-data]
+factory_ai = ["plc/fb_library/*.st", "knowledge_base/*.md"]

@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+
+# Local experience & private data - NEVER commit
+.factory-ai/
+data/
+private/
+output/
+*.db
+*.sqlite
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,16 @@
+{
+  "project": "Example bottling line",
+  "machines": [
+    {"name": "Unscrambler", "length_mm": 2200, "width_mm": 1800},
+    {"name": "Rinser-Filler-Capper", "length_mm": 3000, "width_mm": 2200},
+    {"name": "Labeller", "length_mm": 2500, "width_mm": 1200},
+    {"name": "Coder", "length_mm": 800, "width_mm": 700},
+    {"name": "Case packer", "length_mm": 3200, "width_mm": 1800},
+    {"name": "Palletiser", "length_mm": 3000, "width_mm": 3000}
+  ],
+  "gap_mm": 1200,
+  "aisle_mm": 1500,
+  "rows": 2,
+  "room_length_mm": 20000,
+  "room_width_mm": 12000
+}
