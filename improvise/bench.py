@@ -49,10 +49,12 @@ def expected_values(item: dict) -> list[tuple[dict, float]]:
     checks = item.get("checks", [])
     if not checks:
         return []
-    from .tools import load_all
-    reg = load_all()
-    ref = item["reference"]
-    result = reg[ref["tool"]].call(ref["args"])
+    result = None
+    if any("ref_path" in c for c in checks):
+        from .tools import load_all
+        reg = load_all()
+        ref = item["reference"]
+        result = reg[ref["tool"]].call(ref["args"])
     out = []
     for c in checks:
         val = c["value"] if "value" in c else _dig(result, c["ref_path"])
