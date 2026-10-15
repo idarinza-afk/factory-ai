@@ -138,3 +138,134 @@ def utilities_summary(machines: list[dict], diversity_factor: float = 0.8, power
             "compressed_air_NL_min": round(tot["air_NL_min"] * air_margin, 1),
             "compressor_m3_min": round(tot["air_NL_min"] * air_margin / 1000, 2),
             "water_m3_h": round(tot["water_L_h"] / 1000, 2), "steam_kg_h": round(tot["steam_kg_h"], 1)}
+
+
+@tool
+def drive_torque(power_kw: float, output_rpm: float, input_rpm: float = 1450, service_factor: float = 1.5) -> dict:
+    """Output torque of a motor/gearbox drive, design torque with service factor, and gear ratio.
+
+    Args:
+        power_kw: motor power in kW
+        output_rpm: required output speed in rpm
+        input_rpm: motor speed in rpm (4-pole 50 Hz ~1450), default 1450
+        service_factor: gearbox service factor for the duty, default 1.5
+    """
+    t = 9550 * power_kw / output_rpm
+    return {"output_torque_Nm": round(t, 1), "design_torque_Nm": round(t * service_factor, 1),
+            "gear_ratio": round(input_rpm / output_rpm, 2)}
+
+
+@tool
+def shaft_diameter(torque_Nm: float, bending_moment_Nm: float = 0, allowable_shear_MPa: float = 40) -> dict:
+    """First estimate of a solid steel shaft diameter for combined torsion and bending (equivalent torque).
+
+    Args:
+        torque_Nm: transmitted torque in Nm
+        bending_moment_Nm: maximum bending moment in Nm, default 0
+        allowable_shear_MPa: allowable shear stress incl. keyway and fatigue allowance (mild steel ~40), default 40
+    """
+    te = math.sqrt(bending_moment_Nm ** 2 + torque_Nm ** 2)
+    d = (16 * te / (math.pi * allowable_shear_MPa * 1e6)) ** (1 / 3) * 1000
+    std = [10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 100, 110, 120]
+    return {"equivalent_torque_Nm": round(te, 1), "min_diameter_mm": round(d, 1),
+            "suggested_diameter_mm": next((x for x in std if x >= d), math.ceil(d))}
+
+
+@tool
+def pipe_size(flow_m3_per_h: float, velocity_m_s: float = 1.5) -> dict:
+    """Pipe inside diameter from flow and target velocity (water ~1-2 m/s, CIP supply >=1.5 m/s, suction <1 m/s).
+
+    Args:
+        flow_m3_per_h: volume flow in m3/h
+        velocity_m_s: target velocity in m/s, default 1.5
+    """
+    d = math.sqrt(4 * flow_m3_per_h / 3600 / (math.pi * velocity_m_s)) * 1000
+    dn = [15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300, 350, 400]
+    sel = next((x for x in dn if x >= d), None)
+    v_sel = flow_m3_per_h / 3600 / (math.pi * (sel / 1000) ** 2 / 4) if sel else None
+    return {"required_inside_diameter_mm": round(d, 1), "nominal_size_DN": sel,
+            "velocity_at_DN_m_s": round(v_sel, 2) if v_sel else None,
+            "note": "DN is nominal; check the real inside diameter of the pipe standard/schedule used"}
+
+
+@tool
+def air_receiver(deficit_NL_min: float, duration_min: float, p_start_bar: float = 7, p_min_bar: float = 6) -> dict:
+    """Compressed-air receiver volume to cover a demand peak above compressor output for a time.
+
+    Args:
+        deficit_NL_min: demand above compressor capacity in normal litres per minute
+        duration_min: how long the peak lasts in minutes
+        p_start_bar: receiver gauge pressure at the start of the peak, default 7
+        p_min_bar: lowest acceptable gauge pressure, default 6
+    """
+    if p_start_bar <= p_min_bar:
+        raise ValueError("p_start_bar must be above p_min_bar")
+    v = deficit_NL_min * duration_min * 1.013 / (p_start_bar - p_min_bar)
+    std = [50, 100, 150, 200, 270, 300, 500, 750, 1000, 1500, 2000, 3000, 5000]
+    return {"receiver_volume_L": round(v), "suggested_size_L": next((x for x in std if x >= v), math.ceil(v))}
+
+
+@tool
+def cooling_load(mass_kg_per_h: float, t_in_C: float, t_out_C: float, cp_above_kJ_kgK: float = 3.6,
+                 freeze_point_C: float = -1.0, latent_kJ_kg: float = 0, cp_below_kJ_kgK: float = 1.8,
+                 margin: float = 1.2) -> dict:
+    """Product cooling or freezing load: sensible above freezing + latent + sensible below freezing.
+
+    Args:
+        mass_kg_per_h: product throughput in kg/h
+        t_in_C: product temperature in
+        t_out_C: product temperature out
+        cp_above_kJ_kgK: specific heat above freezing (most foods 3.2-3.9), default 3.6
+        freeze_point_C: initial freezing point, default -1
+        latent_kJ_kg: latent heat of freezing (water content x 334); 0 when not freezing
+        cp_below_kJ_kgK: specific heat when frozen, default 1.8
+        margin: allowance for losses, door openings, fans, default 1.2
+    """
+    m = mass_kg_per_h / 3600
+    if t_out_C >= freeze_point_C or not latent_kJ_kg:
+        q = m * cp_above_kJ_kgK * (t_in_C - t_out_C)
+        parts = {"sensible_kW": round(q, 2)}
+    else:
+        q1 = m * cp_above_kJ_kgK * (t_in_C - freeze_point_C)
+        q2 = m * latent_kJ_kg
+        q3 = m * cp_below_kJ_kgK * (freeze_point_C - t_out_C)
+        q = q1 + q2 + q3
+        parts = {"sensible_above_kW": round(q1, 2), "latent_kW": round(q2, 2), "sensible_below_kW": round(q3, 2)}
+    return {**parts, "product_load_kW": round(q, 2), "design_load_kW": round(q * margin, 2),
+            "design_load_TR": round(q * margin / 3.517, 2)}
+
+
+@tool
+def process_capability(values: list[float], lsl: float, usl: float) -> dict:
+    """Cp and Cpk of a process from measurements (e.g. fill weights) and specification limits.
+
+    Args:
+        values: measured values (at least 20 recommended)
+        lsl: lower specification limit
+        usl: upper specification limit
+    """
+    import statistics
+    if len(values) < 2:
+        raise ValueError("need at least 2 values")
+    mu, sd = statistics.mean(values), statistics.stdev(values)
+    if sd == 0:
+        raise ValueError("no variation in the data")
+    cp = (usl - lsl) / (6 * sd)
+    cpk = min(usl - mu, mu - lsl) / (3 * sd)
+    return {"n": len(values), "mean": round(mu, 4), "std_dev": round(sd, 4), "Cp": round(cp, 2), "Cpk": round(cpk, 2),
+            "verdict": "capable (Cpk >= 1.33)" if cpk >= 1.33 else "marginal (1.0-1.33)" if cpk >= 1 else "not capable (Cpk < 1)"}
+
+
+@tool
+def staffing(operators_per_shift: float, shifts: int, relief_factor: float = 0.1, absence_factor: float = 0.08) -> dict:
+    """Headcount needed to run a line: operators per shift, relief for breaks, absence and holidays.
+
+    Args:
+        operators_per_shift: people needed on the line at the same time
+        shifts: shifts per day
+        relief_factor: extra people for breaks/relief, default 0.1
+        absence_factor: allowance for leave and absence, default 0.08
+    """
+    per_shift = math.ceil(operators_per_shift * (1 + relief_factor))
+    total = math.ceil(per_shift * shifts * (1 + absence_factor))
+    return {"people_per_shift": per_shift, "total_headcount": total}

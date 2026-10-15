@@ -50,9 +50,7 @@ class Agent:
         prompt = SYSTEM_PROMPT + "".join(getattr(m, "PROMPT", "") for m in PLUGINS.values())
         if "pro" not in PLUGINS:
             prompt += FREE_SCOPE_NOTE
-        if use_tools and (tool_names is None or "use_skill" in tool_names):
-            from .skills import catalogue_prompt
-            prompt += catalogue_prompt()
+        self.skill_hints = use_tools and (tool_names is None or "use_skill" in tool_names)
         if role_prompt:
             prompt += "\n" + role_prompt
         self.messages: list[dict] = [{"role": "system", "content": prompt}]
@@ -96,6 +94,9 @@ class Agent:
         # small models rarely look things up on their own: attach the best reference passages
         from .knowledge import default_kb
         refs = default_kb().search(text, limit=2)
+        if self.skill_hints:
+            from .skills import catalogue_prompt
+            content += catalogue_prompt(text)
         if refs:
             content += "\n\n[Reference knowledge - prefer this over general assumptions]\n" + "\n---\n".join(
                 f"({src}) {body[:900]}" for src, body in refs)

@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.7 — 2026-10-16
+### Added
+- 20 more engineering skills (38 total) and calculators: drive_torque, shaft_diameter, pipe_size, air_receiver,
+  cooling_load, process_capability, staffing, takt_from_rate.
+- `improvise memory rules` / `memory delrule <id>`.
+- Pro: 5 Pro skills (PLC program structure, I/O list & panel, IoT architecture, OEE dashboards, commissioning)
+  and Pro connectors (Siemens TIA Portal, CODESYS).
+### Changed
+- The AI never fills prices in machine lists; team members' results include a tool record; stricter
+  consultant review; relevant-skill hints per request instead of the full catalogue; 8k context by default.
+### Benchmark
+- Added per-hour takt and "typical prices" trap questions.
+
 ## v0.6 — 2026-10-16
 ### Added
 - Skills framework (SKILL.md, loaded on demand with `use_skill`) and 18 built-in engineering skills; `improvise skills`.

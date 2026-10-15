@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.6 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.7 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![Improvise calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +16,19 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.7 — 2026-10-16**
+- 🛠️ **38 engineering skills** (was 18): motor & drive selection, gearboxes and shafts, steam & heating,
+  refrigeration, compressed-air systems, pipe sizing, CIP design, packaging machine selection,
+  end-of-line & palletising, robot cells, inspection systems, energy audits, SMED, SPC, manual workstations,
+  food-contact materials, BOQ/tender documents, warehouse sizing, project risk & change, calculation reports.
+- 🧮 **New calculators:** drive torque & gear ratio, shaft diameter, pipe size, air receiver, cooling/freezing
+  load, process capability (Cp/Cpk), staffing, and takt from an hourly rate.
+- ✅ **Lessons from real tests:** the first real project-team run on an 8B model read "8,000 eggs per hour" as a
+  daily demand and filled in invented prices. Fixed: a dedicated per-hour takt tool, the AI can no longer
+  write prices, every team result carries a record of the tools actually used, and the consultant now
+  checks units, capacity, invented values and claimed documents one by one.
+- Only the skills relevant to a request are shown to the model, keeping prompts small for local models.
 
 **v0.6 — 2026-10-16**
 - 🧠 **Skills.** 18 built-in engineering skills (proposal package, line sizing, layout, conveyor design,
@@ -77,7 +90,7 @@ Full history: [CHANGELOG.md](CHANGELOG.md)
 | Benchmark | engineering questions graded against the calculation tools | `bench.py` |
 | MCP | serve Improvise to other AI assistants; use other MCP servers safely | `mcp.py` |
 | Project team | PM, consultant and discipline specialists working a brief together | `team.py` |
-| Skills | 18 engineering skills loaded on demand; add your own | `skills.py`, `skill_library/` |
+| Skills | 38 engineering skills loaded on demand; add your own | `skills.py`, `skill_library/` |
 | Coding | workspace to write, run and version Python programs | `coding.py` |
 | Connectors | one-command connection to FreeCAD, Blender, Excel, Grafana, InfluxDB, OPC UA… | `connectors.py` |
 | Self-protection | daily backups, self-test, safe update with automatic rollback | `guard.py` |

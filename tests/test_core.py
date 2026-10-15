@@ -282,6 +282,7 @@ def test_engineering_calcs_and_skills():
     assert "BLANK" in use_skill("proposal-package")
     assert "Unknown skill" in use_skill("nope")
     assert "conveyor-design" in catalogue_prompt()
+    assert "conveyor-design" in catalogue_prompt("size a conveyor belt motor") and "cip-design" not in catalogue_prompt("size a conveyor belt motor")
     from improvise.tools import load_all
     reg = load_all()
     for s in skills.values():   # every tool a skill names must exist (Pro tools excepted)
@@ -335,3 +336,15 @@ def test_rate_takt_rules_and_no_ai_prices(tmp_path):
     if f.endswith(".xlsx"):
         ws = openpyxl.load_workbook(f).active
         assert all(c.value != 99999 for row in ws.iter_rows() for c in row)
+
+
+def test_more_engineering_calcs():
+    from improvise.calc.engineering import (air_receiver, cooling_load, drive_torque, pipe_size,
+                                            process_capability, shaft_diameter, staffing)
+    assert drive_torque(1.5, 50)["output_torque_Nm"] == 286.5
+    assert shaft_diameter(300)["suggested_diameter_mm"] == 35
+    assert pipe_size(10)["nominal_size_DN"] == 50
+    assert air_receiver(500, 2)["receiver_volume_L"] == 1013
+    assert cooling_load(1000, 20, -18, 3.6, -1, 250, 1.8)["product_load_kW"] == pytest.approx(98.94, abs=0.02)
+    assert process_capability([500, 501, 499, 502, 500, 498, 501, 500, 499, 500], 495, 505)["Cpk"] == 1.44
+    assert staffing(6, 2)["total_headcount"] == 16

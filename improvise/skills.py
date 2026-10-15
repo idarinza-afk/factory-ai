@@ -76,12 +76,28 @@ def load_skills() -> dict[str, Skill]:
     return skills
 
 
-def catalogue_prompt() -> str:
-    skills = load_skills()
-    if not skills:
-        return ""
-    lines = "\n".join(f"- {s.name}: {s.description}" for s in skills.values())
-    return ("\nSKILLS - before starting a job that matches one of these, call use_skill(name) and follow it:\n"
+def relevant_skills(query: str, limit: int = 6) -> list[Skill]:
+    """Skills whose name/description share the most words with the request."""
+    words = set(re.findall(r"[a-z]{3,}", query.lower()))
+    words |= {w[:-1] for w in words if w.endswith("s")}
+
+    def score(s: Skill) -> int:
+        hay = set(re.findall(r"[a-z]{3,}", (s.name.replace("-", " ") + " " + s.description).lower()))
+        hay |= {w[:-1] for w in hay if w.endswith("s")}
+        return len(words & hay)
+
+    ranked = sorted(load_skills().values(), key=score, reverse=True)
+    return [s for s in ranked[:limit] if score(s) > 0]
+
+
+def catalogue_prompt(query: str | None = None, limit: int = 6) -> str:
+    """With a query: the few skills relevant to it. Without: the full catalogue."""
+    skills = relevant_skills(query, limit) if query else list(load_skills().values())
+    if not skills:  # e.g. a request in Thai: give just the names, cheap to read
+        names = sorted(load_skills())
+        return ("\nSKILLS available (call use_skill(name) when one fits): " + ", ".join(names) + "\n") if names else ""
+    lines = "\n".join(f"- {s.name}: {s.description}" for s in skills)
+    return ("\nSKILLS - if the job matches one of these, call use_skill(name) first and follow it:\n"
             + lines + "\n")
 
 

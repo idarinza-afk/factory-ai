@@ -86,7 +86,7 @@ def add(name: str, params: dict[str, str] | None = None, env: dict[str, str] | N
     if missing:
         raise ValueError(f"{name} needs --param " + " --param ".join(f"{m}=..." for m in missing))
     args = [a.format(**params) for a in c["args"]]
-    command, args = _wrap(c["command"], args)
+    command, args = _wrap(c["command"].format(**params), args)
     entry = {"command": command, "args": args}
     if env or c.get("env"):
         entry["env"] = {k: env.get(k, "") for k in c.get("env", [])} | env
