@@ -110,3 +110,41 @@ def test_contribution_anonymises(tmp_path):
     for leak in ["john@acme.com", "Acme Foods", "1,250,000", "Secret Farm", "234 5678"]:
         assert leak not in text
     assert scan_for_leaks(anonymise("call 02-123-4567")) == []
+
+
+def test_benchmark_references_and_grader():
+    from factory_ai import bench
+    items = bench.load_items()
+    assert len(items) >= 15
+    assert len({i["id"] for i in items}) == len(items)
+    for item in items:
+        exp = bench.expected_values(item)  # every reference tool must run
+        if exp:
+            # an answer that states the reference numbers must score 1.0 on answer checks
+            words = " ".join(" ".join(g) for g in item.get("must_include_any", []))
+            answer = " ".join(f"{v:.4f}" for _, v in exp) + " " + words
+            g = bench.grade(item, answer, item.get("expect_tools", []))
+            assert g["score"] == 1.0, (item["id"], g)
+    takt = next(i for i in items if i["id"] == "takt-01")
+    assert bench.grade(takt, "takt is 3.1 s", [])["score"] == 0.0
+    price = next(i for i in items if i["id"] == "docs-price-01")
+    assert bench.grade(price, "Filler unit price ฿ 250,000", ["make_machine_list"])["answer_score"] == 0.0
+
+
+def test_benchmark_run_with_mock_model():
+    from factory_ai import bench
+
+    class Mock:
+        def chat(self, messages, tools=None):
+            if messages[-1]["role"] == "user":
+                return {"role": "assistant", "content": "", "tool_calls": [{"function": {
+                    "name": "takt_time", "arguments": {"demand_units": 20000, "shifts": 2, "hours_per_shift": 8,
+                                                        "break_min_per_shift": 60}}}]}
+            return {"role": "assistant", "content": "Takt time is 2.52 s per bottle."}
+
+    items = [i for i in bench.load_items() if i["id"] in ("takt-01", "memory-01")]
+    res = bench.run(model="mock", items=items, client=Mock())
+    by = {r["id"]: r for r in res["results"]}
+    assert by["takt-01"]["score"] == 1.0
+    assert by["memory-01"]["score"] < 1.0  # mock ignores the seeded rule
+    assert "BETTER" in bench.compare(res, {**res, "score": 0.0, "model": "old"})

@@ -9,6 +9,10 @@ Free to use. PLC control logic, IoT and dashboards are coming in **factory-ai Pr
 
 > Status: v0.1 (preview) — see [docs/ROADMAP.md](docs/ROADMAP.md)
 
+![factory-ai calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
+
+![Bottling line laid out by factory-ai in a U shape inside a 20 x 12 m room](docs/images/layout.png)
+
 ---
 
 ## What it does (free edition)
@@ -64,6 +68,16 @@ factory-ai memory verify 1 "On site the sealer was the bottleneck; needed 10% mo
 factory-ai memory rule "egg line" "Always add a 10% buffer before the sealer"
 factory-ai memory export dataset.jsonl     # for periodic LoRA fine-tuning
 ```
+
+### Is a new model really better?
+
+```bash
+factory-ai bench --model qwen2.5:14b                      # score a model on engineering questions
+factory-ai bench --model my-finetune --compare old.json   # release only if it beats the previous one
+```
+
+The benchmark (`factory_ai/benchmarks/*.jsonl`) checks numbers against the calculation tools,
+tool use, knowledge, and whether confirmed experience changes the answer.
 
 Details: [docs/LEARNING.md](docs/LEARNING.md) · Help train the shared model: [CONTRIBUTING.md](CONTRIBUTING.md)
 

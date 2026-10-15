@@ -6,6 +6,7 @@
   factory-ai run <tool> '<json args>'     run a tool directly, no LLM needed
   factory-ai memory add|verify|rule|search|stats|export
   factory-ai pro                          what the Pro edition adds
+  factory-ai bench [--model m] [--compare old.json]   score a model on engineering questions
   factory-ai contribute [--secret "Customer A" ...]
   factory-ai doctor                       check the local setup
 """
@@ -153,6 +154,24 @@ def cmd_contribute(args) -> None:
     print("\nNext: open a Pull Request adding this file to the community dataset repo (see CONTRIBUTING.md).")
 
 
+def cmd_bench(args) -> None:
+    from . import bench
+    items = bench.load_items(args.file)
+    if args.only:
+        items = [i for i in items if i["id"].startswith(args.only) or i.get("category") == args.only]
+    if args.limit:
+        items = items[: args.limit]
+    res = bench.run(model=args.model, items=items, progress=print)
+    from .config import load
+    out = Path(args.out) if args.out else load().output_dir / f"bench_{res['model'].replace(':', '-').replace('/', '-')}_{res['date'][:10]}.json"
+    out.write_text(json.dumps(res, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"\nscore {res['score']:.3f} on {res['items']} items  {res['by_category']}")
+    print(f"saved {out}")
+    if args.compare:
+        print()
+        print(bench.compare(res, json.loads(Path(args.compare).read_text(encoding="utf-8"))))
+
+
 def cmd_doctor(args) -> None:
     import urllib.request
     from .config import load
@@ -225,6 +244,15 @@ def main(argv: list[str] | None = None) -> None:
 
     sub.add_parser("doctor", help="check setup").set_defaults(func=cmd_doctor)
     sub.add_parser("pro", help="what factory-ai Pro adds").set_defaults(func=cmd_pro)
+
+    b = sub.add_parser("bench", help="benchmark the current model on engineering questions")
+    b.add_argument("--model", help="Ollama model to test (default: FACTORY_AI_MODEL)")
+    b.add_argument("--file", help="custom benchmark JSONL")
+    b.add_argument("--only", help="item id prefix or category")
+    b.add_argument("--limit", type=int)
+    b.add_argument("--out", help="where to save the results JSON")
+    b.add_argument("--compare", help="previous results JSON to compare against")
+    b.set_defaults(func=cmd_bench)
 
     from .tools import load_plugins
     for mod in load_plugins().values():

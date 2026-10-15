@@ -47,6 +47,12 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
     rows = max(1, int(rows))
     per_row = -(-len(machines) // rows)
     catalog = _catalog()
+    row_lengths = []
+    for r in range(rows):
+        chunk = machines[r * per_row:(r + 1) * per_row]
+        if chunk:
+            row_lengths.append(sum(m["length_mm"] for m in chunk) + gap_mm * (len(chunk) - 1))
+    longest = max(row_lengths)
     placed, y, max_len = [], aisle_mm, 0.0
     for r in range(rows):
         chunk = machines[r * per_row:(r + 1) * per_row]
@@ -55,7 +61,8 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
         if r % 2 == 1:
             chunk = list(reversed(chunk))
         row_w = max(m["width_mm"] for m in chunk)
-        x = aisle_mm
+        # return rows are right-aligned so the flow turns at the end of the previous row
+        x = aisle_mm + (longest - row_lengths[r] if r % 2 == 1 else 0)
         for m in chunk:
             item = {
                 "name": m["name"], "x_mm": x, "y_mm": y + (row_w - m["width_mm"]) / 2,
@@ -90,6 +97,10 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
     for i, p in enumerate(placed, start=1):
         parts.append(f'<rect x="{p["x_mm"]*s:.1f}" y="{p["y_mm"]*s:.1f}" width="{p["length_mm"]*s:.1f}" height="{p["width_mm"]*s:.1f}" fill="#dbe8f5" stroke="#1f4e78"/>')
         parts.append(f'<text x="{(p["x_mm"]+p["length_mm"]/2)*s:.1f}" y="{(p["y_mm"]+p["width_mm"]/2)*s+4:.1f}" text-anchor="middle">{i}. {p["name"]}</text>')
+    for a, b in zip(placed, placed[1:]):
+        ax, ay = (a["x_mm"] + a["length_mm"] / 2) * s, (a["y_mm"] + a["width_mm"] / 2) * s
+        bx, by = (b["x_mm"] + b["length_mm"] / 2) * s, (b["y_mm"] + b["width_mm"] / 2) * s
+        parts.append(f'<line x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx:.1f}" y2="{by:.1f}" stroke="#c62828" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"/>')
     parts.append(f'<text x="0" y="{H*s+30:.0f}">Line envelope {max_len/1000:.2f} m x {total_w/1000:.2f} m (dims in m)</text>')
     parts.append("</g></svg>")
     svg_path.write_text("\n".join(parts), encoding="utf-8")

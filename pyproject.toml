@@ -24,4 +24,4 @@ factory-ai = "factory_ai.cli:main"
 include = ["factory_ai*"]
 
 [tool.setuptools.package-data]
-factory_ai = ["plc/fb_library/*.st", "knowledge_base/*.md"]
+factory_ai = ["knowledge_base/*.md", "benchmarks/*.jsonl"]
