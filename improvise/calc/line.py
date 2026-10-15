@@ -178,3 +178,27 @@ def buffer_size(downstream_rate_per_min: float, upstream_stop_min: float, safety
     """
     units = math.ceil(downstream_rate_per_min * upstream_stop_min * safety_factor)
     return {"buffer_units": units}
+
+
+@tool
+def product_spacing(product_length_mm: float, gap_mm: float, rate_per_min: float, infeed_pitch_mm: float = 0) -> dict:
+    """Create gaps between products by a speed step-up from an infeed conveyor to a faster conveyor.
+
+    Args:
+        product_length_mm: product length in the direction of travel
+        gap_mm: required gap between products after the transfer
+        rate_per_min: products per minute
+        infeed_pitch_mm: product pitch on the infeed (0 = products touching, pitch = product length)
+    """
+    p_in = infeed_pitch_mm or product_length_mm
+    p_out = product_length_mm + gap_mm
+    if p_out <= p_in:
+        raise ValueError("the required pitch is not larger than the infeed pitch - no speed-up needed")
+    v_in = rate_per_min * p_in / 1000          # m/min
+    v_out = rate_per_min * p_out / 1000
+    return {"infeed_speed_m_per_min": round(v_in, 2), "outfeed_speed_m_per_min": round(v_out, 2),
+            "speed_ratio": round(v_out / v_in, 3), "outfeed_pitch_mm": p_out,
+            "notes": ["each product is pulled away once its centre of gravity passes onto the faster belt",
+                      "keep the transfer short (dead plate or nose-over) so products do not tip",
+                      "use a VFD on the faster conveyor (at least) to fine-tune the ratio on site",
+                      "photo-eye after the transfer measures gap = sensor OFF time x outfeed speed to verify spacing"]}

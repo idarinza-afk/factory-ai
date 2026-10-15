@@ -85,6 +85,9 @@ class Agent:
 
         ranked = sorted((n for n in names if n not in self.ALWAYS), key=score, reverse=True)
         chosen = {n for n in ranked[: limit - len(self.ALWAYS)] if score(n) > 0}
+        from .skills import relevant_skills
+        for sk in relevant_skills(expand(text), limit=2):   # the best-matching skills bring their tools
+            chosen |= {t for t in sk.tools if t in names}
         return chosen | {n for n in self.ALWAYS if n in names}
 
     def _schemas(self, allowed: set[str] | None = None) -> list[dict]:
@@ -93,6 +96,18 @@ class Agent:
         return [t.schema() for n, t in REGISTRY.items() if (allowed is None and (self.tool_names is None or n in self.tool_names))
                 or (allowed is not None and n in allowed)]
 
+    LOGIC_WORDS = ("plc", "ladder", "sequence", "control logic", "interlock", "state machine", "flowchart", "workflow")
+    APPROVAL_WORDS = ("approve", "approved", "อนุมัติ", "ถูกต้อง", "flowchart ok", "批准", "承認", "đồng ý")
+
+    @staticmethod
+    def detect_language(text: str) -> str:
+        checks = [("Thai", 0x0E00, 0x0E7F), ("Japanese", 0x3040, 0x30FF), ("Korean", 0xAC00, 0xD7AF),
+                  ("Chinese", 0x4E00, 0x9FFF), ("Vietnamese", 0x1EA0, 0x1EF9)]
+        for name, a, b in checks:
+            if any(a <= ord(c) <= b for c in text):
+                return name
+        return ""
+
     def ask(self, text: str) -> str:
         experience = default_memory().context_for(text)
         content = text if not experience else f"{text}\n\n[Relevant experience]\n{experience}"
@@ -100,6 +115,18 @@ class Agent:
         from .knowledge import default_kb
         from .lang import expand
         refs = default_kb().search(expand(text), limit=2)
+        lang = self.detect_language(text)
+        if lang:
+            content += f"\n\n[Reply in {lang}.]"
+        from .lang import expand as _ex
+        low = _ex(text).lower()
+        if any(w in low for w in self.APPROVAL_WORDS):
+            self.flow_approved = True
+        if self.use_tools and not getattr(self, "flow_approved", False) and any(w in low for w in self.LOGIC_WORDS) \
+                and "make_flowchart" in REGISTRY and (self.tool_names is None or "make_flowchart" in self.tool_names):
+            content += ("\n\n[Rule: this involves control logic and no approved flowchart exists yet. Do the "
+                        "calculations that are needed, then draw the sequence with make_flowchart, show it and ask the "
+                        "user to approve it. Do NOT write PLC code in this answer.]")
         if self.skill_hints:
             from .skills import catalogue_prompt
             content += catalogue_prompt(expand(text))
@@ -108,6 +135,8 @@ class Agent:
                 f"({src}) {body[:900]}" for src, body in refs)
         self.messages.append({"role": "user", "content": content})
         allowed = self._select_tools(text)
+        if "make_flowchart" in REGISTRY and self.use_tools and self.tool_names is None:
+            allowed.add("make_flowchart")
         seen: dict[str, str] = {}
 
         for round_no in range(self.cfg.max_tool_rounds):

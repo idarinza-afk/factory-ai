@@ -383,3 +383,11 @@ def test_multilingual_routing():
         names = [s.name for s in relevant_skills(expand(q))]
         assert "conveyor-design" in names, (q, names)
     assert "alarm" in expand("เครื่องขึ้นอลาร์ม E12")
+
+
+def test_product_spacing_and_language():
+    from improvise.calc.line import product_spacing
+    r = product_spacing(200, 200, 30)
+    assert r["speed_ratio"] == 2.0 and r["infeed_speed_m_per_min"] == 6.0 and r["outfeed_speed_m_per_min"] == 12.0
+    from improvise.agent import Agent
+    assert Agent.detect_language("สายพาน") == "Thai" and Agent.detect_language("hello") == ""
