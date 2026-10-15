@@ -196,8 +196,8 @@ def test_mcp_client_against_own_server(tmp_path, monkeypatch):
     assert mcp.needs_confirmation({"name": "write_tag", "annotations": {"readOnlyHint": True}}, True)
 
 
-def test_project_team_with_mock_model(tmp_path):
-    from factory_ai import team
+def test_project_team_pm_led(tmp_path):
+    from factory_ai.team import ProjectTeam, load_roles
 
     class Mock:
         def __init__(self):
@@ -205,26 +205,43 @@ def test_project_team_with_mock_model(tmp_path):
 
         def chat(self, messages, tools=None):
             system, last = messages[0]["content"], messages[-1]
-            self.seen.append((system.split("You are the ")[-1].split(" in a")[0], [t["function"]["name"] for t in tools or []]))
+            who = system.split("You are the ")[-1].split(" in a")[0].split(" of this")[0]
+            self.seen.append((who, [t["function"]["name"] for t in tools or []]))
             if last["role"] == "tool":
                 return {"role": "assistant", "content": "Takt is 2.52 s. Open questions: bottle size."}
-            if "Plan the work" in last["content"]:
-                return {"role": "assistant", "content": 'Plan: [{"role": "process_engineer", "task": "size the line"},'
-                                                        ' {"role": "design_engineer", "task": "layout"}, {"role": "nobody", "task": "x"}]'}
-            if "Process / Production Engineer" in system and "size the line" in last["content"]:
+            c = last["content"]
+            if c.startswith("Propose the project team"):
+                return {"role": "assistant", "content": '{"process_engineer": {"title": "Process Engineer"},'
+                        ' "packaging_specialist": {"title": "Packaging Specialist", "focus": "film and cartons",'
+                        ' "tools": ["search_knowledge", "not_a_tool"]}, "project_manager": {"title": "x"}}'}
+            if "Decide who on the team does what" in c:
+                return {"role": "assistant", "content": '[{"member": "line_lead", "task": "size the line"},'
+                                                        ' {"member": "ghost", "task": "x"}]'}
+            if "size the line" in c and "YOUR TASK" in c:
                 return {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "takt_time", "arguments": {
                     "demand_units": 20000, "shifts": 2, "hours_per_shift": 8, "break_min_per_shift": 60}}}]}
-            return {"role": "assistant", "content": "ok"}
+            if "Report back to the owner" in c:
+                return {"role": "assistant", "content": "Our line lead computed takt 2.52 s."}
+            return {"role": "assistant", "content": "reviewed: ok"}
 
-    roles = team.load_roles()
-    assert {"project_manager", "consultant", "process_engineer", "electrical_engineer"} <= set(roles)
+    assert "project_manager" in load_roles()
     mock = Mock()
-    res = team.run_team("20,000 bottles/day juice line", client=mock)
-    assert [p["role"] for p in res["plan"]] == ["process_engineer", "design_engineer"]  # unknown role dropped
-    titles = [e["title"] for e in res["entries"]]
-    assert titles[0].startswith("Project Manager") and "Senior Consultant" in titles and titles[-1].endswith("summary")
-    assert "2.52" in res["entries"][1]["output"]
-    # the design engineer only ever sees its own discipline's tools
-    design_tools = {t for who, tools in mock.seen if who.startswith("Mechanical") for t in tools}
-    assert "layout_line" in design_tools and "roi" not in design_tools
-    assert Path(res["report"]).exists()
+    t = ProjectTeam("Juice Line A")
+    prop = t.propose("20,000 bottles/day juice line", client=mock)
+    assert "project_manager" not in prop                                   # the PM is never a member
+    assert prop["packaging_specialist"]["tools"] == ["search_knowledge"]    # invalid tools dropped
+    assert "takt_time" in prop["process_engineer"]["tools"]                 # catalogue tools filled in
+    # the owner defines the roles themselves
+    t.set_member("line_lead", "Line Lead Engineer", "Owns capacity and takt for this customer", ["takt_time"])
+    t.set_member("consultant", "Senior Consultant", "Check everything twice", [], reviewer=True)
+    reply = t.work("How fast must the line run?", client=mock)
+    assert "2.52" in reply
+    assert [e["who"] for e in t.board] == ["line_lead", "consultant"]      # unknown member dropped, reviewer ran
+    assert "2.52" in t.board[0]["output"]
+    lead_tools = {x for who, tools in mock.seen if who.startswith("Line Lead") for x in tools}
+    assert lead_tools == {"takt_time"}
+    # saved and reopened with the user's own definitions
+    again = ProjectTeam.load("Juice Line A")
+    assert again.members["line_lead"]["focus"] == "Owns capacity and takt for this customer"
+    assert again.pm_history[-1]["content"] == reply
+    assert "juice_line_a" in ProjectTeam.list_projects()

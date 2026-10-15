@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **factory-ai Pro** (see below).
 
-> Status: v0.3 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.4 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![factory-ai calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +16,13 @@ Free to use. PLC control logic, IoT and dashboards are coming in **factory-ai Pr
 ---
 
 ## What's new
+
+**v0.4 — 2026-10-16**
+- 🧑‍💼 **You talk only to the Project Manager.** `factory-ai team` opens a conversation with your PM.
+  Describe the project, the PM proposes a team, and **you define every position** — keep the PM's
+  description or write your own responsibilities, rename, add or remove positions and choose their tools.
+  Then just keep talking to the PM: it delegates to the team, the reviewer checks the work, and the PM
+  reports back. Each project's team and history are saved, so you can come back to it any time.
 
 **v0.3 — 2026-10-16**
 - 👷 **Project team mode.** `factory-ai team "your brief"` splits the thinking into a project team:
@@ -77,8 +84,8 @@ factory-ai ask "Bottling line, 20,000 bottles/day on 2 shifts: how many 3,000 bp
 factory-ai tools                     # list all tools
 factory-ai run takt_time '{"demand_units":20000,"shifts":2,"hours_per_shift":8,"break_min_per_shift":60}'
 factory-ai run layout_line examples/bottling_line.json
-factory-ai team "Juice line, 20,000 bottles/day, 2 shifts, 20 x 12 m room"   # work it as a project team
-factory-ai team --list               # roles in the team
+factory-ai team                      # talk to your Project Manager; it builds and leads the team
+factory-ai team --list               # role catalogue and saved projects
 factory-ai pro                       # see what the Pro edition adds
 ```
 

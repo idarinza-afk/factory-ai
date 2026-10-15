@@ -7,7 +7,8 @@
   factory-ai memory add|verify|rule|search|stats|export
   factory-ai pro                          what the Pro edition adds
   factory-ai bench [--model m] [--compare old.json]   score a model on engineering questions
-  factory-ai team "brief..." [--roles a,b] | team --list   project-team mode
+  factory-ai team [--project name]        talk to your Project Manager, who builds and leads a team
+  factory-ai team "brief..." | team --list
   factory-ai mcp serve | mcp tools        MCP server for other AIs / list tools from ~/.factory-ai/mcp.json
   factory-ai contribute [--secret "Customer A" ...]
   factory-ai doctor                       check the local setup
@@ -184,22 +185,130 @@ def cmd_bench(args) -> None:
         print(bench.compare(res, json.loads(Path(args.compare).read_text(encoding="utf-8"))))
 
 
+TEAM_HELP = """You are talking to the Project Manager. Commands:
+  /team                 show the team and each position's responsibility
+  /role <key>           define or change a position (title, responsibility, tools)
+  /add <title>          add a new position
+  /remove <key>         remove a position
+  /reviewer <key>       make a position the reviewer (or turn it off)
+  /tools                list tools you can give to positions
+  /board                show the team's latest work
+  /report               save the full team report (Markdown)
+  /help                 this help
+  exit                  leave (the project is saved)"""
+
+
+def _edit_role(team, key, proposal=None) -> None:
+    from .team import available_tools
+    cur = team.members.get(key) or (proposal or {}).get(key) or {}
+    title = input(f"  title [{cur.get('title', key)}]: ").strip() or cur.get("title", key)
+    print(f"  current responsibility: {cur.get('focus') or '(none)'}")
+    focus = input("  responsibility (Enter = keep): ").strip() or cur.get("focus", "")
+    tools_now = ", ".join(cur.get("tools") or [])
+    t = input(f"  tools [{tools_now or 'none'}] (comma list, Enter = keep, '?' = list): ").strip()
+    if t == "?":
+        print("  " + ", ".join(available_tools()))
+        t = input("  tools: ").strip()
+    tools = [x.strip() for x in t.split(",") if x.strip()] if t else list(cur.get("tools") or [])
+    team.set_member(key, title, focus, tools, cur.get("reviewer"))
+
+
 def cmd_team(args) -> None:
-    from .team import load_roles, run_team
-    if args.list or not args.brief:
-        for k, r in load_roles().items():
-            tag = " (lead)" if r.get("lead") else " (reviewer)" if r.get("reviewer") else " [Pro]" if r.get("pro") else ""
-            print(f"{k:22s} {r['title']}{tag}")
-        print("\nAdd your own roles in ~/.factory-ai/team_roles.json")
-        return
     from .llm import LLMError
-    only = [r.strip() for r in args.roles.split(",")] if args.roles else None
+    from .team import ProjectTeam, load_roles, run_team, slug, available_tools
+    if args.list:
+        for k, r in load_roles().items():
+            tag = " (you talk to this one)" if r.get("lead") else " (reviewer)" if r.get("reviewer") else " [Pro]" if r.get("pro") else ""
+            print(f"{k:22s} {r['title']}{tag}")
+        print("\nRole catalogue. Add your own in ~/.factory-ai/team_roles.json. Saved projects: "
+              + (", ".join(ProjectTeam.list_projects()) or "none"))
+        return
+    if args.brief:  # one-shot, non-interactive
+        only = [r.strip() for r in args.roles.split(",")] if args.roles else None
+        try:
+            res = run_team(" ".join(args.brief), only=only, progress=print)
+        except LLMError as e:
+            sys.exit(str(e))
+        print("\n" + res["summary"] + f"\n\nfull team report: {res['report']}")
+        return
+
+    # interactive: the owner only talks to the Project Manager
+    projects = ProjectTeam.list_projects()
+    if projects:
+        print("saved projects: " + ", ".join(projects))
+    name = (args.project or input("project name: ").strip() or "my_project")
+    team = ProjectTeam.load(name)
     try:
-        res = run_team(" ".join(args.brief), only=only, progress=print)
+        if team:
+            print(f"\nPM: Welcome back to '{team.project}'. The team:\n{team.describe()}")
+        else:
+            team = ProjectTeam(name)
+            brief = input("\nPM: Hello, I am your Project Manager. Tell me about the project:\n> ").strip()
+            print("\nPM: Let me propose a team...")
+            proposal = team.propose(brief)
+            for k, m in proposal.items():
+                print(f"\n  {m['title']} ({k}){' [reviewer]' if m.get('reviewer') else ''}\n    {m['focus']}")
+            print("\nPM: Please define each position. For each: Enter = accept as proposed, e = edit, n = not needed.")
+            for k, m in proposal.items():
+                ans = input(f"  {m['title']} [Enter/e/n]: ").strip().lower()
+                if ans == "n":
+                    continue
+                if ans == "e":
+                    _edit_role(team, k, proposal)
+                else:
+                    team.set_member(k, m["title"], m["focus"], m.get("tools"), m.get("reviewer"))
+            while input("\nPM: Add another position? [y/N] ").strip().lower() == "y":
+                title = input("  title: ").strip()
+                if title:
+                    _edit_role(team, slug(title), {slug(title): {"title": title}})
+            team.save()
+            print(f"\nPM: The team is set:\n{team.describe()}\n\nWhat should we work on first?")
+        print("(type /help for commands)")
+        while True:
+            try:
+                q = input("\nyou> ").strip()
+            except (EOFError, KeyboardInterrupt):
+                break
+            if not q:
+                continue
+            if q in ("exit", "quit"):
+                break
+            cmd, _, arg = q.partition(" ")
+            if cmd == "/help":
+                print(TEAM_HELP)
+            elif cmd == "/team":
+                print(team.describe())
+            elif cmd == "/role" and arg:
+                _edit_role(team, slug(arg)); team.save()
+            elif cmd == "/add" and arg:
+                _edit_role(team, slug(arg), {slug(arg): {"title": arg}}); team.save()
+            elif cmd == "/remove" and arg:
+                print("removed" if team.remove_member(arg) else "no such position"); team.save()
+            elif cmd == "/reviewer" and arg:
+                m = team.members.get(slug(arg))
+                if m:
+                    m["reviewer"] = not m.get("reviewer"); team.save()
+                    print(f"{m['title']} reviewer: {m['reviewer']}")
+            elif cmd == "/tools":
+                print(", ".join(available_tools()))
+            elif cmd == "/board":
+                for e in team.board[-5:]:
+                    print(f"\n--- {e['title']} ({e['task']})\n{e['output'][:1200]}")
+            elif cmd == "/report":
+                from .config import load
+                p = load().output_dir / f"{slug(team.project)}_team_report.md"
+                p.write_text(team.report_markdown(), encoding="utf-8")
+                print(f"saved {p}")
+            elif cmd.startswith("/"):
+                print(TEAM_HELP)
+            else:
+                print("PM: on it...")
+                print("\nPM: " + team.work(q, progress=print))
     except LLMError as e:
-        sys.exit(str(e))
-    print("\n" + res["summary"])
-    print(f"\nfull team report: {res['report']}")
+        print(e)
+    finally:
+        if team:
+            team.save()
 
 
 def cmd_mcp(args) -> None:
@@ -290,9 +399,10 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("pro", help="what factory-ai Pro adds").set_defaults(func=cmd_pro)
 
     tm = sub.add_parser("team", help="work on a brief as a project team (PM, consultant, engineers...)")
-    tm.add_argument("brief", nargs="*")
-    tm.add_argument("--roles", help="comma-separated specialists to include, e.g. process_engineer,design_engineer")
-    tm.add_argument("--list", action="store_true", help="list available roles")
+    tm.add_argument("brief", nargs="*", help="give a brief for a one-shot run; omit to talk to the PM interactively")
+    tm.add_argument("--project", help="project name (interactive mode)")
+    tm.add_argument("--roles", help="one-shot: keep only these positions, e.g. process_engineer,design_engineer")
+    tm.add_argument("--list", action="store_true", help="list the role catalogue and saved projects")
     tm.set_defaults(func=cmd_team)
 
     mc = sub.add_parser("mcp", help="MCP: serve factory-ai to other AIs, or list connected MCP tools")

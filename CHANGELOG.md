@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4 — 2026-10-16
+### Changed
+- Project team mode is now led by the Project Manager: the owner talks only to the PM, the PM proposes a
+  team, and the owner defines every position (title, responsibility, tools), adds or removes positions
+  and chooses the reviewer. Teams, board and PM conversation are saved per project
+  (`~/.factory-ai/teams/`). Commands inside the chat: /team, /role, /add, /remove, /reviewer, /board, /report.
+- `factory-ai team "brief"` still runs a one-shot job with the PM's proposed team.
+
 ## v0.3 — 2026-10-16
 ### Added
 - Project team mode (`factory-ai team`): Project Manager plans, discipline specialists work with
