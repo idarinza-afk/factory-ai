@@ -405,7 +405,10 @@ def cmd_doctor(args) -> None:
     from .config import load
     cfg = load()
     print(f"home     : {cfg.home}")
-    print(f"model    : {cfg.model}")
+    print(f"brain    : {cfg.provider} / {cfg.model}" + (f"  (API {cfg.api_base})" if cfg.api_base else ""))
+    print(f"expert   : {cfg.expert_provider + ' / ' + (cfg.expert_model or cfg.model) if cfg.expert_provider else 'not configured'}")
+    if cfg.provider != "ollama":
+        print(f"api key  : {'set' if cfg.api_key else 'MISSING (IMPROVISE_API_KEY)'}")
     try:
         with urllib.request.urlopen(f"{cfg.ollama_url}/api/tags", timeout=5) as r:
             models = [m["name"] for m in json.loads(r.read()).get("models", [])]

@@ -71,7 +71,7 @@ def numbers_in(text: str) -> list[float]:
 
 
 def _number_ok(expected: float, found: list[float], rel_tol: float, percent_ok: bool) -> bool:
-    targets = [expected] + ([expected * 100] if percent_ok else [])
+    targets = [expected, expected * 1000, expected / 1000] + ([expected * 100] if percent_ok else [])  # unit scale (NL vs m3, W vs kW)
     for t in targets:
         tol = abs(t) * rel_tol if rel_tol else 1e-9
         tol = max(tol, 0.5 * 10 ** -2 if rel_tol else 1e-9)

@@ -450,3 +450,49 @@ def test_3d_and_electrical():
                              [{"tag": "B1", "name": "Transfer eye"}], [{"tag": "K1", "name": "M1 run"}])
     svg = Path(e["power_svg"]).read_text()
     assert "VFD" in svg and "MPCB" in svg and Path(e["components_csv"]).exists() and e["connected_motor_load_kW"] == 0.36
+
+
+def test_api_providers_and_expert(monkeypatch):
+    import io
+    import urllib.request
+    from improvise import llm
+    seen = {}
+
+    class Resp(io.BytesIO):
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    def fake_urlopen(req, timeout=0):
+        body = json.loads(req.data)
+        seen["url"], seen["body"], seen["headers"] = req.full_url, body, dict(req.headers)
+        if "anthropic" in req.full_url:
+            return Resp(json.dumps({"content": [{"type": "text", "text": "hi"},
+                                                {"type": "tool_use", "id": "tu1", "name": "takt_time", "input": {"demand_units": 1}}]}).encode())
+        return Resp(json.dumps({"choices": [{"message": {"content": "", "tool_calls": [
+            {"id": "c1", "type": "function", "function": {"name": "oee", "arguments": "{\"a\": 1}"}}]}}]}).encode())
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    msgs = [{"role": "system", "content": "sys"}, {"role": "user", "content": "q"},
+            {"role": "assistant", "content": "", "tool_calls": [{"id": "x1", "function": {"name": "oee", "arguments": {"a": 1}}}]},
+            {"role": "tool", "content": "r", "tool_call_id": "x1"}]
+    a = llm.AnthropicClient("claude-sonnet-5-5", "k").chat(msgs, [{"type": "function", "function": {"name": "oee", "description": "d", "parameters": {}}}])
+    assert a["tool_calls"][0]["function"]["name"] == "takt_time" and seen["body"]["system"] == "sys"
+    assert seen["body"]["messages"][-1]["content"][0]["type"] == "tool_result"
+    o = llm.OpenAICompatClient("http://x/v1", "m", "k").chat(msgs)
+    assert o["tool_calls"][0]["function"]["arguments"] == {"a": 1}
+    assert isinstance(seen["body"]["messages"][2]["tool_calls"][0]["function"]["arguments"], str)
+    from improvise.expert import ask_expert
+    assert "No expert" in ask_expert("q")
+    monkeypatch.setenv("IMPROVISE_EXPERT_PROVIDER", "openai")
+    monkeypatch.setenv("IMPROVISE_EXPERT_MODEL", "gpt-x")
+    ask_expert("call john@acme.com about the 50,000 THB filler")
+    assert "john@acme.com" not in json.dumps(seen["body"]) and "50,000" not in json.dumps(seen["body"])
+
+
+def test_number_audit():
+    from improvise.agent import Agent
+    from improvise.config import load
+    a = Agent(load())
+    ev = "demand 20000 per day, 2 shifts 8 h, 60 min. takt_time_s: 2.52, required_rate_per_hour: 1428.6"
+    assert a._audit_numbers("Takt is 2.52 s, 1,428.6 per hour, 20,000 per day.", ev) is None
+    assert "not from the user" in a._audit_numbers("Takt 2.52 s; use 3 fillers at 4,500 bph and 7.5 kW, 900 mm wide.", ev)

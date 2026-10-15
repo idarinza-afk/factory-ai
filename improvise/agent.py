@@ -26,6 +26,8 @@ Rules:
 - FLOWCHART FIRST: for a new process, machine sequence, control logic or workflow where the user has not
   given a flowchart, first draw one with make_flowchart, show it, and ask the user to approve or correct
   it. Only after approval write PLC code, programs or detailed documents.
+- If ask_expert is available, use it for hard judgement questions (technology choice, troubleshooting
+  ideas, design reviews); still compute every number with your own tools.
 - When a job needs a program (simulation, data conversion, a chart, a custom calculation),
   write it with workspace_write, run it with run_python, read the output and fix errors.
   Keep scripts small and readable, standard library first.
@@ -49,7 +51,8 @@ class Agent:
         self.cfg = cfg
         load_all()
         register_kb_tool()
-        self.llm = OllamaClient(cfg.ollama_url, cfg.model, cfg.temperature, think=cfg.think, num_ctx=cfg.num_ctx)
+        from .llm import make_client
+        self.llm = make_client(cfg)
         from .tools import PLUGINS
         prompt = SYSTEM_PROMPT + "".join(getattr(m, "PROMPT", "") for m in PLUGINS.values())
         if "pro" not in PLUGINS:
@@ -89,6 +92,30 @@ class Agent:
         for sk in relevant_skills(expand(text), limit=2):   # the best-matching skills bring their tools
             chosen |= {t for t in sk.tools if t in names}
         return chosen | {n for n in self.ALWAYS if n in names}
+
+    @staticmethod
+    def _numbers(text: str) -> set[float]:
+        out = set()
+        for m in re.findall(r"-?\d[\d,]*(?:\.\d+)?", text):
+            try:
+                out.add(round(float(m.replace(",", "")), 2))
+            except ValueError:
+                pass
+        return out
+
+    def _audit_numbers(self, answer: str, evidence: str) -> str | None:
+        """Number audit: engineering figures in the answer must come from the user, a tool or the references."""
+        have = self._numbers(evidence)
+        def supported(v):
+            return v in have or any(abs(v - h) <= max(0.02 * abs(h), 0.011) or abs(v - h * 100) <= 0.15
+                                    or abs(v * 1000 - h) <= 0.6 or abs(v - h * 1000) <= 0.6 for h in have)
+        claims = [v for v in self._numbers(answer) if abs(v) >= 3 and v not in (2024, 2025, 2026) and not supported(v)]
+        if len(claims) >= 3:
+            shown = ", ".join(f"{c:g}" for c in claims[:8])
+            return (f"Number check: these figures are not from the user, a tool result or the references: {shown}. "
+                    "Recompute them with the calculation tools, or clearly label them as assumptions/typical values. "
+                    "Then give the corrected final answer.")
+        return None
 
     def _guard(self, answer: str, called: set[str], allowed: set[str]) -> str | None:
         """Catch answers that hand-make what a tool must produce (e.g. ladder text without the generator).
@@ -150,6 +177,8 @@ class Agent:
         guard_retries = 0
         if "make_flowchart" in REGISTRY and self.use_tools and self.tool_names is None:
             allowed.add("make_flowchart")
+        if self.cfg.expert_provider and self.use_tools and self.tool_names is None:
+            allowed.add("ask_expert")  # a second brain is configured
         seen: dict[str, str] = {}
 
         for round_no in range(self.cfg.max_tool_rounds):
@@ -164,12 +193,16 @@ class Agent:
             if not calls:
                 answer = msg.get("content", "")
                 fix = None if last_round else self._guard(answer, called_tools, allowed)
+                if not fix and not last_round and called_tools and self.cfg.number_audit:
+                    evidence = "\n".join(str(m.get("content", "")) for m in self.messages if m.get("role") in ("user", "tool"))
+                    fix = self._audit_numbers(answer, evidence)
                 if fix and guard_retries < 2:
                     guard_retries += 1
                     self.messages.append({"role": "user", "content": fix})
                     continue
                 return answer
-            for call in calls:
+            for ci, call in enumerate(calls):
+                call.setdefault("id", f"call_{round_no}_{ci}")
                 fn = call.get("function", {})
                 name, args = fn.get("name"), fn.get("arguments", {})
                 if isinstance(args, str):
@@ -199,5 +232,5 @@ class Agent:
                     self.on_tool(name, args, result)
                 text_result = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, default=str)
                 seen.setdefault(key, text_result)
-                self.messages.append({"role": "tool", "content": text_result})
+                self.messages.append({"role": "tool", "content": text_result, "tool_call_id": call["id"]})
         return "(stopped: too many tool rounds)"

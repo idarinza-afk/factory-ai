@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.9 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.10 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![Improvise calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +16,18 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.10 — 2026-10-16**
+- 🧠 **Use any AI as the brain — or as a second brain.** Besides local Ollama models, Improvise can run on any
+  OpenAI-compatible API (OpenAI, OpenRouter, Groq, DeepSeek, LM Studio, vLLM…) or on Claude via the Anthropic API
+  (`IMPROVISE_PROVIDER`, `IMPROVISE_MODEL`, `IMPROVISE_API_KEY`). Or keep the local model and give it an expert
+  to consult on hard questions (`IMPROVISE_EXPERT_PROVIDER` / `_MODEL` / `_API_KEY`) - questions are anonymised
+  first and the numbers still come from Improvise's own tools.
+- 🔎 **Number audit:** figures in an answer that don't come from you, a tool or the references are sent back
+  to be recalculated or labelled as assumptions.
+- ⚙️ New: batch heat-up calculator (retorts, kettles, tanks); machine count from per-shift or per-day targets.
+- 🧪 Challenge benchmark first run on Qwen3 8B: 66 % (level 4: 100 %, level 5: 15 %) - the misses drove the
+  fixes above.
 
 **v0.9 — 2026-10-16**
 - 📐 **2D, 3D and electrical drawings.** `layout_dxf` writes an A3 DXF layout (frame, equipment list, title block,
@@ -162,6 +174,18 @@ Bigger models answer knowledge and planning questions better; the calculations a
 | No GPU | any modern CPU, 16 GB RAM | 7–8B | works, but minutes per answer |
 
 Disk: about 5–20 GB per model. Windows, macOS and Linux are supported.
+
+## Choosing the brain
+
+| Setting | Local (default) | OpenAI-compatible API | Claude (Anthropic API) |
+|---|---|---|---|
+| `IMPROVISE_PROVIDER` | `ollama` | `openai` | `anthropic` |
+| `IMPROVISE_MODEL` | e.g. `qwen3:8b` | your provider's model name | e.g. `claude-sonnet-5-5` |
+| `IMPROVISE_API_BASE` | – | e.g. `https://api.openai.com/v1`, `http://localhost:1234/v1` | – |
+| `IMPROVISE_API_KEY` | – | your key | your key |
+
+Keys are read from the environment only and never written to files. With a cloud brain, your questions leave
+your computer - use a local model for confidential projects, or the expert mode (anonymised questions only).
 
 ## Installation (Windows / macOS / Linux)
 

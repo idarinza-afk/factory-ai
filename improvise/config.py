@@ -17,6 +17,15 @@ def _env(name: str, default=None):
     return os.environ.get(f"IMPROVISE_{name}", os.environ.get(f"FACTORY_AI_{name}", default))
 
 
+def _default_key() -> str:
+    """API key from IMPROVISE_API_KEY, else the provider's usual variable. Never stored in files."""
+    key = _env("API_KEY", "")
+    if key:
+        return key
+    provider = str(_env("PROVIDER", "ollama")).lower()
+    return os.environ.get("ANTHROPIC_API_KEY", "") if provider == "anthropic" else os.environ.get("OPENAI_API_KEY", "")
+
+
 def _home() -> Path:
     explicit = _env("HOME")
     if explicit:
@@ -35,9 +44,18 @@ class Config:
     home: Path = field(default_factory=_home)
     ollama_url: str = field(default_factory=lambda: os.environ.get("OLLAMA_URL", "http://localhost:11434"))
     model: str = field(default_factory=lambda: _env("MODEL", "qwen2.5:14b"))
+    provider: str = field(default_factory=lambda: _env("PROVIDER", "ollama"))
+    api_base: str = field(default_factory=lambda: _env("API_BASE", ""))
+    api_key: str = field(default_factory=lambda: _default_key())
+    # optional second "brain" the local model can consult (ask_expert)
+    expert_provider: str = field(default_factory=lambda: _env("EXPERT_PROVIDER", ""))
+    expert_model: str = field(default_factory=lambda: _env("EXPERT_MODEL", ""))
+    expert_api_base: str = field(default_factory=lambda: _env("EXPERT_API_BASE", ""))
+    expert_api_key: str = field(default_factory=lambda: _env("EXPERT_API_KEY", ""))
     temperature: float = 0.2
     think: bool = field(default_factory=lambda: str(_env("THINK", "0")).lower() in ("1", "true", "yes"))
     max_tool_rounds: int = 8
+    number_audit: bool = field(default_factory=lambda: str(_env("NUMBER_AUDIT", "1")) not in ("0", "false", "no"))
     num_ctx: int = field(default_factory=lambda: int(_env("NUM_CTX", "8192")))
     max_tools: int = field(default_factory=lambda: int(_env("MAX_TOOLS", "10")))
 

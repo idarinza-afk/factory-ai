@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.10 — 2026-10-16
+### Added
+- LLM providers: OpenAI-compatible APIs and the Anthropic Messages API (`IMPROVISE_PROVIDER`, `IMPROVISE_API_BASE`,
+  `IMPROVISE_API_KEY`); tool calls carry ids across providers.
+- `ask_expert`: optional second brain (`IMPROVISE_EXPERT_*`), anonymised questions.
+- Number audit of answers (`IMPROVISE_NUMBER_AUDIT=0` to disable).
+- `batch_heat_up`; `machines_required` accepts per-shift/per-day targets.
+### Changed
+- Benchmark grader accepts x1000 unit scaling (NL/min vs m3/min); ROI skill uses staffing for labour savings.
+
 ## v0.9 — 2026-10-16
 ### Added
 - layout_dxf (A3 DXF), layout_3d (OBJ + HTML viewer), electrical_schematic (power + control SVG/HTML, component CSV).

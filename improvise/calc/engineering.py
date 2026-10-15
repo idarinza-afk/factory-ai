@@ -269,3 +269,24 @@ def staffing(operators_per_shift: float, shifts: int, relief_factor: float = 0.1
     per_shift = math.ceil(operators_per_shift * (1 + relief_factor))
     total = math.ceil(per_shift * shifts * (1 + absence_factor))
     return {"people_per_shift": per_shift, "total_headcount": total}
+
+
+@tool
+def batch_heat_up(mass_kg: float, cp_kJ_per_kgK: float, t_start_C: float, t_end_C: float, time_min: float,
+                  loss_factor: float = 1.15, latent_heat_kJ_per_kg: float = 2100) -> dict:
+    """Heating power and steam rate to heat a batch (retort, kettle, tank, CIP tank) within a given time.
+
+    Args:
+        mass_kg: mass heated (product + water + carriers; add the steel of the vessel for accuracy)
+        cp_kJ_per_kgK: specific heat (water 4.19, foods 3.0-3.9, steel 0.5)
+        t_start_C: start temperature
+        t_end_C: end temperature
+        time_min: heat-up time in minutes
+        loss_factor: allowance for losses, default 1.15
+        latent_heat_kJ_per_kg: steam latent heat at supply pressure, default 2100
+    """
+    energy_kj = mass_kg * cp_kJ_per_kgK * (t_end_C - t_start_C) * loss_factor
+    kw = energy_kj / (time_min * 60)
+    return {"energy_kWh": round(energy_kj / 3600, 2), "heating_power_kW": round(kw, 1),
+            "steam_kg_per_h_during_heat_up": round(kw * 3600 / latent_heat_kJ_per_kg, 1),
+            "steam_kg_per_batch": round(energy_kj / latent_heat_kJ_per_kg, 1)}

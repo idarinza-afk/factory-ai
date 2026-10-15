@@ -57,19 +57,27 @@ def takt_from_rate(rate_per_hour: float, units_per_pack: float = 1, shifts: int 
 
 
 @tool
-def machines_required(target_rate_per_hour: float, machine_rated_per_hour: float, expected_oee: float = 0.85) -> dict:
-    """Number of identical machines needed in parallel to reach a target output rate.
+def machines_required(machine_rated_per_hour: float, target_rate_per_hour: float = 0, expected_oee: float = 0.85,
+                      target_units_per_period: float = 0, period_hours: float = 0) -> dict:
+    """Number of identical machines needed in parallel to reach a target output (per hour, or per shift/day).
 
     Args:
-        target_rate_per_hour: required good output per hour
         machine_rated_per_hour: nameplate speed of one machine per hour
+        target_rate_per_hour: required good output per hour (or give target_units_per_period + period_hours)
         expected_oee: expected OEE as a fraction (0-1), default 0.85
+        target_units_per_period: required good output per shift or per day (alternative to the hourly rate)
+        period_hours: productive hours in that shift/day
     """
     if not 0 < expected_oee <= 1:
         raise ValueError("expected_oee must be between 0 and 1")
+    if not target_rate_per_hour:
+        if not (target_units_per_period and period_hours):
+            raise ValueError("give target_rate_per_hour, or target_units_per_period and period_hours")
+        target_rate_per_hour = target_units_per_period / period_hours
     effective = machine_rated_per_hour * expected_oee
     n = math.ceil(target_rate_per_hour / effective)
     return {
+        "target_rate_per_hour": round(target_rate_per_hour, 1),
         "effective_rate_per_machine": round(effective, 1),
         "machines": n,
         "installed_capacity_per_hour": round(n * effective, 1),
