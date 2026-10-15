@@ -1,41 +1,41 @@
 # factory-ai
 
-**AI ผู้ช่วยวิศวกรรมการผลิต ที่รันในเครื่องตัวเอง (Local AI)**
-ออกแบบไลน์ผลิต · คำนวณ capacity / line balance / OEE / ROI · layout 2D + ส่งต่อ 3D
-· ทำ machine list, part list, manual และเอกสารที่เกี่ยวข้อง
-และ **เก่งขึ้นเรื่อยๆ จากประสบการณ์ของคุณเอง** โดยข้อมูลไม่ออกจากเครื่อง
+**A local AI assistant for production engineering.**
+Design production lines · calculate capacity, line balance, OEE and ROI · lay out lines in 2D and hand off to 3D
+· produce machine lists, part lists, manuals and related documents —
+and it **keeps getting better from your own verified experience**, without your data ever leaving your machine.
 
-ใช้ฟรี — งาน PLC, IoT และ dashboard อยู่ใน **factory-ai Pro** (เร็วๆ นี้ — ดูหัวข้อด้านล่าง)
+Free to use. PLC control logic, IoT and dashboards are coming in **factory-ai Pro** (see below).
 
-*A local AI assistant for production engineering that learns from your own verified experience.*
-
-> สถานะ: v0.1 (preview) — ดู [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.1 (preview) — see [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ---
 
-## ทำอะไรได้บ้าง (ฟรี)
+## What it does (free edition)
 
-| โมดูล | ความสามารถ | ไฟล์ |
+| Module | Capabilities | Code |
 |---|---|---|
-| คำนวณไลน์ | takt time, จำนวนเครื่อง (คิด OEE), bottleneck, line balancing (RPW), buffer | `factory_ai/calc/line.py` |
-| OEE / ROI | OEE แยก A×P×Q + loss หลัก, payback / NPV / IRR | `calc/oee.py`, `calc/roi.py` |
-| เอกสาร | Machine list, Part list (Excel), O&M manual (Markdown/Word) — ราคาที่ไม่รู้จะเว้นว่าง | `documents.py` |
-| Layout | วางเครื่องตาม flow (ตรง / U / งู), เช็กพื้นที่, SVG + JSON สำหรับ 3D | `layout.py` |
-| ความรู้ | Knowledge base ค้นได้ (+ โน้ตของคุณเองใน `~/.factory-ai/knowledge`) | `knowledge.py` |
-| เรียนรู้ | Experience memory, กฎที่วิศวกรยืนยัน, export dataset สำหรับ fine-tune | `memory.py` |
-| ชุมชน | แพ็กข้อมูลแบบลบข้อมูลลับ เพื่อช่วยเทรนโมเดลกลาง | `contribute.py` |
+| Line calculations | takt time, machine count (OEE-adjusted), bottleneck, line balancing (RPW), buffer sizing | `factory_ai/calc/line.py` |
+| OEE / ROI | OEE split into A × P × Q with the main loss; payback, NPV, IRR | `calc/oee.py`, `calc/roi.py` |
+| Documents | machine list, part list (Excel), O&M manual (Markdown/Word) — unknown prices are left blank | `documents.py` |
+| Layout | place machines in flow order (straight, U or serpentine), check room fit, export SVG + JSON for 3D | `layout.py` |
+| Knowledge | searchable engineering knowledge base, plus your own notes in `~/.factory-ai/knowledge` | `knowledge.py` |
+| Learning | experience memory, engineer-confirmed rules, dataset export for fine-tuning | `memory.py` |
+| Community | anonymised contribution packs to help train the shared model | `contribute.py` |
 
-หลักการสำคัญ: **AI ไม่เดาตัวเลข** — ตัวเลขทุกตัวมาจากฟังก์ชันคำนวณที่ทดสอบแล้ว โมเดลภาษามีหน้าที่เข้าใจโจทย์ เลือกเครื่องมือ และอธิบายผล
+Core principle: **the AI never guesses numbers.** Every figure comes from a tested calculation function;
+the language model's job is to understand the request, pick the right tools and explain the result.
 
-## ติดตั้ง (Windows / macOS / Linux)
+## Installation (Windows / macOS / Linux)
 
-1. ติดตั้ง Python 3.10+ และ [Ollama](https://ollama.com)
-2. ดึงโมเดลที่รองรับ tool calling เช่น
+1. Install Python 3.10+ and [Ollama](https://ollama.com).
+2. Pull a model that supports tool calling, sized to your GPU — roughly 7–8B for 6–8 GB of VRAM,
+   14B or larger for 12 GB and up. For example:
    ```bash
    ollama pull qwen2.5:14b
    ```
-   (เลือกขนาดตาม VRAM; ตั้งชื่อโมเดลด้วยตัวแปร `FACTORY_AI_MODEL`)
-3. ติดตั้ง factory-ai
+   Set the model name with the `FACTORY_AI_MODEL` environment variable.
+3. Install factory-ai:
    ```bash
    git clone https://github.com/idarinza-afk/factory-ai
    cd factory-ai
@@ -43,59 +43,62 @@
    factory-ai doctor
    ```
 
-## ใช้งาน
+## Usage
 
 ```bash
-factory-ai chat                      # คุยกับผู้ช่วย (พิมพ์ /save เพื่อเก็บคำตอบเป็นเคส)
-factory-ai ask "ไลน์บรรจุ 20,000 ขวด/วัน 2 กะ ต้องใช้ filler 3,000 bph กี่เครื่อง"
-factory-ai tools                     # ดูเครื่องมือทั้งหมด
+factory-ai chat                      # interactive assistant (type /save to store an answer as a case)
+factory-ai ask "Bottling line, 20,000 bottles/day on 2 shifts: how many 3,000 bph fillers do I need?"
+factory-ai tools                     # list all tools
 factory-ai run takt_time '{"demand_units":20000,"shifts":2,"hours_per_shift":8,"break_min_per_shift":60}'
 factory-ai run layout_line examples/bottling_line.json
-factory-ai pro                       # ดูว่า Pro จะเพิ่มอะไร
+factory-ai pro                       # see what the Pro edition adds
 ```
 
-### ทำให้มันเก่งขึ้น
+The calculation tools work without a language model — `factory-ai run` calls them directly.
+
+### Making it smarter
 
 ```bash
-factory-ai memory add --kind line_design --title "ไลน์ไข่" --problem "..." --solution "..."
-factory-ai memory verify 1 "หน้างานจริง sealer เป็นคอขวด ต้องเผื่อ 10%"
-factory-ai memory rule "egg line" "เผื่อ buffer 10% ก่อน sealer เสมอ"
-factory-ai memory export dataset.jsonl     # สำหรับ fine-tune LoRA เป็นรอบ
+factory-ai memory add --kind line_design --title "Egg packing line" --problem "..." --solution "..."
+factory-ai memory verify 1 "On site the sealer was the bottleneck; needed 10% more speed"
+factory-ai memory rule "egg line" "Always add a 10% buffer before the sealer"
+factory-ai memory export dataset.jsonl     # for periodic LoRA fine-tuning
 ```
 
-รายละเอียด: [docs/LEARNING.md](docs/LEARNING.md) · ช่วยเทรนโมเดลกลาง: [CONTRIBUTING.md](CONTRIBUTING.md)
+Details: [docs/LEARNING.md](docs/LEARNING.md) · Help train the shared model: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-## factory-ai Pro (เร็วๆ นี้)
+## factory-ai Pro (coming soon)
 
-ต่อยอดจากงานออกแบบไลน์ในตัวฟรี ไปสู่งานควบคุมและระบบอัตโนมัติ
+Takes the line you designed in the free edition into control and automation.
 
-| ความสามารถ | รายละเอียด |
+| Capability | Details |
 |---|---|
-| **PLC control logic** | สร้าง I/O list จาก machine list, แปลง sequence เป็น IEC 61131-3 Structured Text, function block มาตรฐาน (motor, valve, conveyor, alarm), ตรวจโค้ดอัตโนมัติ, ทดสอบผ่าน simulator, ส่งออกไปยัง Siemens TIA / Mitsubishi GX Works / Omron Sysmac |
-| **IoT** | tag map MQTT / OPC UA จาก I/O list, โค้ด edge collector แบบอ่านอย่างเดียว, ตั้งค่า gateway |
-| **Dashboard** | OEE และ production dashboard จากข้อมูลไลน์ที่ออกแบบไว้, วิเคราะห์ downtime / ของเสีย, รายงานประจำกะ และ dashboard แบบ real-time |
+| **PLC control logic** | I/O list generated from the machine list, sequences converted to IEC 61131-3 Structured Text, standard function blocks (motor, valve, conveyor, alarm), automatic code checking, simulator testing, export to Siemens TIA / Mitsubishi GX Works / Omron Sysmac |
+| **IoT** | MQTT / OPC UA tag maps from the I/O list, read-only edge collector code, gateway configuration |
+| **Dashboards** | OEE and production dashboards built from your lines' data, downtime and reject analysis, shift reports and real-time dashboards |
 
-**ค่าใช้จ่าย** (ประกาศราคาเร็วๆ นี้)
+**Pricing** (prices to be announced)
 
-| แพ็กเกจ | การคิดเงิน | เหมาะกับ |
+| Plan | Billing | For |
 |---|---|---|
-| Pro | รายเดือน ต่อผู้ใช้ | วิศวกร / ฟรีแลนซ์ / SI ขนาดเล็ก |
-| Team | รายเดือน ต่อที่นั่ง + experience memory ใช้ร่วมกันในทีม | บริษัท SI / ผู้ผลิตเครื่องจักร |
-| Enterprise | รายปี + ติดตั้งในองค์กร, เทรนโมเดลด้วยข้อมูลบริษัท, ซัพพอร์ต | โรงงาน / องค์กรขนาดใหญ่ |
+| Pro | monthly, per user | engineers, freelancers, small system integrators |
+| Team | monthly, per seat + shared experience memory | system integrators, machine builders |
+| Enterprise | annual + on-prem install, fine-tuning on company data, support | factories and large organisations |
 
-สนใจทดลองใช้ Pro: เปิด issue บน GitHub แล้วติดป้าย `pro-interest`
+Interested in trying Pro? Open a GitHub issue with the label `pro-interest`.
 
-## ความปลอดภัย (อ่านก่อนใช้)
+## Safety (read before use)
 
-- ผลคำนวณเป็นเครื่องมือช่วยตัดสินใจ วิศวกรผู้รับผิดชอบต้องตรวจสอบก่อนใช้งานจริง
-- ราคาที่ไม่ได้ใส่จะเว้นว่างเสมอ AI จะไม่เดาราคา
+- Results are decision-support tools; the responsible engineer must check them before real-world use.
+- Prices that are not supplied are always left blank — the AI never guesses prices.
 
-ดู [docs/SAFETY.md](docs/SAFETY.md)
+See [docs/SAFETY.md](docs/SAFETY.md).
 
-## ข้อมูลส่วนตัว
+## Your data
 
-ทุกอย่างที่เป็นของคุณ (experience memory, โน้ต, ไฟล์ output) อยู่ที่ `~/.factory-ai` (เปลี่ยนได้ด้วย `FACTORY_AI_HOME`) ซึ่งอยู่นอก repo และไม่ถูก push ขึ้น GitHub
+Everything that belongs to you (experience memory, notes, output files) lives in `~/.factory-ai`
+(change it with `FACTORY_AI_HOME`), outside the repository, and is never pushed to GitHub.
 
 ## License
 
-ดู [LICENSE](LICENSE)
+See [LICENSE](LICENSE).
