@@ -33,7 +33,7 @@ class OllamaClient:
             "model": self.model,
             "messages": messages,
             "stream": False,
-            "options": {"temperature": self.temperature, "num_ctx": self.num_ctx},
+            "options": {"temperature": self.temperature, "num_ctx": self.num_ctx, "num_predict": 2048},
         }
         if tools:
             payload["tools"] = tools

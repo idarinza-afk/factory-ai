@@ -212,10 +212,9 @@ def test_project_team_pm_led(tmp_path):
             if last["role"] == "tool":
                 return {"role": "assistant", "content": "Takt is 2.52 s. Open questions: bottle size."}
             c = last["content"]
-            if c.startswith("Propose the project team"):
-                return {"role": "assistant", "content": '{"process_engineer": {"title": "Process Engineer"},'
-                        ' "packaging_specialist": {"title": "Packaging Specialist", "focus": "film and cartons",'
-                        ' "tools": ["search_knowledge", "not_a_tool"]}, "project_manager": {"title": "x"}}'}
+            if c.startswith("Which positions does this project need"):
+                return {"role": "assistant", "content": '{"existing": ["process_engineer", "project_manager"], "new": '
+                        '[{"title": "Packaging Specialist", "focus": "film and cartons", "tools": ["search_knowledge", "not_a_tool"]}]}'}
             if "Decide who on the team does what" in c:
                 return {"role": "assistant", "content": '[{"member": "line_lead", "task": "size the line"},'
                                                         ' {"member": "ghost", "task": "x"}]'}

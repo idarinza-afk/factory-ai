@@ -164,12 +164,20 @@ class ProjectTeam:
         tools = available_tools()
         pm = self._agent("You are the Project Manager of a production-line project.", None, False, cfg, client)
         text = pm.ask(
-            "Propose the project team for this brief. Use positions from the catalogue when they fit and add new "
-            "positions if the project needs them (e.g. a packaging specialist). For new positions choose tools from "
-            f"this list only: {tools}.\nCATALOGUE: {json.dumps(catalogue, ensure_ascii=False)}\n"
-            'Reply with a JSON object: {"key": {"title": "...", "focus": "...", "tools": [...]}, ...}\n\n'
-            f"BRIEF:\n{brief}")
-        raw = _json_in(text, "{", "}") or {}
+            "Which positions does this project need? Pick keys from the catalogue and, only if really needed, "
+            "add new positions. Keep it short.\nCATALOGUE: " + ", ".join(f"{k} ({v['title']})" for k, v in catalogue.items())
+            + '\nReply ONLY with JSON: {"existing": ["key", ...], "new": [{"title": "...", "focus": "one sentence"}]}'
+            + f"\n\nBRIEF:\n{brief}")
+        raw_obj = _json_in(text, "{", "}") or {}
+        raw: dict = {}
+        if isinstance(raw_obj.get("existing"), list) or isinstance(raw_obj.get("new"), list):
+            for k in raw_obj.get("existing") or []:
+                raw[str(k)] = {}
+            for n in raw_obj.get("new") or []:
+                if isinstance(n, dict) and n.get("title"):
+                    raw[slug(n["title"])] = {"title": n["title"], "focus": n.get("focus", ""), "tools": n.get("tools", [])}
+        else:  # older/other answer shape: {"key": {...}}
+            raw = raw_obj
         cat = load_roles()
         proposal: dict[str, dict] = {}
         for key, val in raw.items():
@@ -255,10 +263,18 @@ class ProjectTeam:
 def run_team(brief: str, cfg=None, only: list[str] | None = None, client=None,
              progress: Callable[[str], None] = lambda s: None, project: str | None = None) -> dict[str, Any]:
     t = ProjectTeam(project or f"project_{time.strftime('%Y%m%d_%H%M%S')}")
-    progress("[Project Manager] proposing the team")
-    t.members = t.propose(brief, cfg, client)
-    if only:
-        t.members = {k: v for k, v in t.members.items() if k in only or v.get("reviewer")}
+    t.brief = brief
+    if only:  # positions chosen by the user: take them straight from the catalogue
+        cat, tools = load_roles(), set(available_tools())
+        for k in list(only) + [k for k, v in cat.items() if v.get("reviewer")]:
+            if k in cat and k != LEAD_KEY:
+                v = cat[k]
+                t.members[k] = {"title": v["title"], "focus": v["focus"], "tools": [x for x in v.get("tools", []) if x in tools],
+                                **({"reviewer": True} if v.get("reviewer") else {}),
+                                **({"model_env": v["model_env"]} if v.get("model_env") else {})}
+    else:
+        progress("[Project Manager] proposing the team")
+        t.members = t.propose(brief, cfg, client)
     summary = t.work(brief, cfg, client, progress)
     from .config import load
     path = (cfg or load()).output_dir / f"{slug(t.project)}_team_report.md"

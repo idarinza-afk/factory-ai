@@ -50,8 +50,9 @@ class Agent:
         prompt = SYSTEM_PROMPT + "".join(getattr(m, "PROMPT", "") for m in PLUGINS.values())
         if "pro" not in PLUGINS:
             prompt += FREE_SCOPE_NOTE
-        from .skills import catalogue_prompt
-        prompt += catalogue_prompt()
+        if use_tools and (tool_names is None or "use_skill" in tool_names):
+            from .skills import catalogue_prompt
+            prompt += catalogue_prompt()
         if role_prompt:
             prompt += "\n" + role_prompt
         self.messages: list[dict] = [{"role": "system", "content": prompt}]
