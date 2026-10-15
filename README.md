@@ -101,4 +101,5 @@ Everything that belongs to you (experience memory, notes, output files) lives in
 
 ## License
 
-See [LICENSE](LICENSE).
+The free edition is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0).
+factory-ai Pro is a separate commercial product.

@@ -1,40 +1,43 @@
-# factory-ai เก่งขึ้นได้อย่างไร
+# How factory-ai gets better
 
-factory-ai **เก็บข้อมูลเพื่อเรียนรู้ แต่เก็บในเครื่องคุณ** และไม่แก้ "สมอง" (weights) ของตัวเองอัตโนมัติทุกครั้งที่ใช้
-เพราะถ้าเรียนจากคำตอบที่ยังไม่มีใครตรวจ มันจะจำของผิดสะสมไปเรื่อยๆ
+factory-ai **stores what it learns, but only on your machine**, and it does not change its own
+"brain" (model weights) automatically every time you use it. Learning from answers nobody has
+checked would make it accumulate mistakes.
 
-## ชั้นที่ 1 — Experience memory (เก่งขึ้นทันที)
-ทุกงานที่จบ (ออกแบบไลน์, machine list, PLC, ROI) บันทึกเป็น *case* ใน SQLite (`~/.factory-ai/experience.db`)
-ก่อนตอบทุกครั้ง agent จะค้นเคสที่คล้ายกันมาใส่ในบริบท เคสที่ **verified** (ผ่านหน้างานจริง) ได้ลำดับก่อน
-
-```
-factory-ai memory add ...        # เพิ่มเคส (หรือพิมพ์ /save ระหว่าง chat)
-factory-ai memory verify <id> "ผลหน้างานจริง / บทเรียน"
-```
-
-## ชั้นที่ 2 — กฎที่วิศวกรยืนยัน (เก่งขึ้นตรงจุด)
-คำแก้ไขของคุณถูกเก็บเป็น *rule* และถูกบังคับใช้ก่อนความรู้ทั่วไป
+## Layer 1 — Experience memory (better immediately)
+Every finished job (line design, machine list, ROI...) is stored as a *case* in SQLite
+(`~/.factory-ai/experience.db`). Before every answer the agent retrieves similar cases into its
+context; **verified** cases (proven on site) are ranked first.
 
 ```
-factory-ai memory rule "egg line" "เผื่อ buffer 10% ก่อน sealer เสมอ"
+factory-ai memory add ...        # add a case (or type /save during chat)
+factory-ai memory verify <id> "site result / lesson learned"
 ```
 
-## ชั้นที่ 3 — Fine-tune เป็นรอบ (เก่งขึ้นถาวรในตัวโมเดล)
-ส่งออกเคส verified + rules เป็น JSONL รูปแบบ chat แล้วเทรน LoRA ด้วยเครื่องมือมาตรฐาน
-(เช่น Unsloth, Axolotl, LLaMA-Factory) จากนั้นแปลงเป็น GGUF แล้วสร้าง Ollama model ใหม่
+## Layer 2 — Engineer-confirmed rules (better where it matters)
+Your corrections are stored as *rules* and take precedence over general knowledge.
+
+```
+factory-ai memory rule "egg line" "Always add a 10% buffer before the sealer"
+```
+
+## Layer 3 — Periodic fine-tuning (permanently better, inside the model)
+Export verified cases and rules as chat-format JSONL, train a LoRA with standard tools
+(e.g. Unsloth, Axolotl, LLaMA-Factory), convert to GGUF and create a new Ollama model.
 
 ```
 factory-ai memory export dataset.jsonl
-# เทรน LoRA -> merge -> GGUF -> ollama create factory-ai-personal -f Modelfile
+# train LoRA -> merge -> GGUF -> ollama create factory-ai-personal -f Modelfile
 # set FACTORY_AI_MODEL=factory-ai-personal
 ```
 
-แนะนำทำทุก 3 เดือน หรือเมื่อมีเคส verified เพิ่มเกิน ~200 รายการ และทดสอบกับชุดโจทย์ benchmark ก่อนเปลี่ยนไปใช้
+Recommended every 3 months, or once you have ~200 new verified cases. Test against the
+benchmark questions before switching to the new model.
 
-## โครงสร้างโมเดลแบบซ้อนชั้น
+## Layered models
 
 ```
-Personal layer   (experience memory + LoRA ส่วนตัว)   <- เก่งในแบบของคุณ
-Community LoRA   (ทุกคนช่วยกันเทรน, ปล่อยเป็นเวอร์ชัน) <- ดู CONTRIBUTING.md
+Personal layer   (experience memory + personal LoRA)        <- tuned to the way you work
+Community LoRA   (trained together by the community, versioned) <- see CONTRIBUTING.md
 Base model       (open-weight model)
 ```
