@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.10 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.11 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![Improvise calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +16,14 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.11 — 2026-10-16**
+- 📈 **Tested on harder and harder problems** (Qwen3 8B on a 6 GB laptop GPU): challenge levels 2–5 went from
+  66 % to **100 %**, level 6 (multi-step line sizing, Thai gapping + motor) **100 %**, level 7 (whole compressed-air
+  system) 60 %. Pro: rotary timing, cam windows, ESP32 pins and I/O lists 100 %; ladder + simulation 90 %.
+- What made it smarter: tools now suggest the next step, empty replies are retried with the model's thinking on,
+  generated code and simulation verdicts are always shown to you, and answers with unsupported numbers are rechecked.
+- New: batch heat-up, cylinder quantities, per-shift targets for machine counts.
 
 **v0.10 — 2026-10-16**
 - 🧠 **Use any AI as the brain — or as a second brain.** Besides local Ollama models, Improvise can run on any
@@ -150,8 +158,11 @@ calculation tools) on **Qwen3 8B running locally on a laptop RTX 4050 (6 GB)**:
 | Layout | 100 % |
 | Documents (no invented prices) | 100 % |
 | Using your confirmed experience | 100 % |
-| Engineering knowledge questions | 53 % → improved in v0.6 (automatic reference knowledge) |
-| **Overall** | **91 %** |
+| Engineering knowledge questions | 100 % (since v0.6, automatic reference knowledge) |
+| **Overall (core set, v0.6)** | **91 %** |
+| Challenge levels 2–5 (multi-step, Thai, rules) — v0.11 | **100 %** |
+| Challenge level 6 (multi-step line design) — v0.11 | **100 %** |
+| Challenge level 7 (complete system sizing) — v0.11 | 60 % |
 
 What that means in practice:
 

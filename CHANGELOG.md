@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.11 — 2026-10-16
+### Added
+- Challenge levels 6-7; benchmark checks with fixed values and alternative correct answers.
+- Tool next-step hints (product_spacing, pneumatic_cylinder); pneumatic_cylinder quantity.
+### Changed
+- Empty replies from thinking models are retried once with thinking on; empty-reply retry in the agent.
+- Tool reports (generated code, simulation verdicts, produced files) are appended to answers verbatim.
+- Number audit asks for a clean rewritten answer.
+
 ## v0.10 — 2026-10-16
 ### Added
 - LLM providers: OpenAI-compatible APIs and the Anthropic Messages API (`IMPROVISE_PROVIDER`, `IMPROVISE_API_BASE`,
