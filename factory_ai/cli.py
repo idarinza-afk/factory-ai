@@ -7,6 +7,7 @@
   factory-ai memory add|verify|rule|search|stats|export
   factory-ai pro                          what the Pro edition adds
   factory-ai bench [--model m] [--compare old.json]   score a model on engineering questions
+  factory-ai mcp serve | mcp tools        MCP server for other AIs / list tools from ~/.factory-ai/mcp.json
   factory-ai contribute [--secret "Customer A" ...]
   factory-ai doctor                       check the local setup
 """
@@ -34,6 +35,16 @@ def cmd_chat(args) -> None:
     def show(name, a, r):
         print(f"  [tool] {name}({json.dumps(a, ensure_ascii=False)[:120]})", file=sys.stderr)
 
+    from . import mcp
+
+    def confirm(name, a):
+        if not sys.stdin.isatty():
+            return False
+        print(f"\n  ! {name} wants to run with {json.dumps(a, ensure_ascii=False)[:300]}")
+        return input("    allow this action? [y/N] ").strip().lower() == "y"
+
+    mcp.CONFIRM = confirm
+    mcp.connect_servers(log=lambda m: print(m, file=sys.stderr))
     agent = Agent(load(), on_tool=show if args.verbose else None)
     if args.question:
         try:
@@ -172,6 +183,20 @@ def cmd_bench(args) -> None:
         print(bench.compare(res, json.loads(Path(args.compare).read_text(encoding="utf-8"))))
 
 
+def cmd_mcp(args) -> None:
+    from . import mcp
+    if args.action == "serve":
+        mcp.serve()
+    elif args.action == "tools":
+        n = mcp.connect_servers(log=print)
+        from .tools import REGISTRY
+        for name, t in sorted(REGISTRY.items()):
+            if "__" in name:
+                print(f"{name:40s} {t.description[:90]}")
+        print(f"{n} external tools" if n else "no MCP servers configured (see ~/.factory-ai/mcp.json)")
+        mcp.close_all()
+
+
 def cmd_doctor(args) -> None:
     import urllib.request
     from .config import load
@@ -244,6 +269,10 @@ def main(argv: list[str] | None = None) -> None:
 
     sub.add_parser("doctor", help="check setup").set_defaults(func=cmd_doctor)
     sub.add_parser("pro", help="what factory-ai Pro adds").set_defaults(func=cmd_pro)
+
+    mc = sub.add_parser("mcp", help="MCP: serve factory-ai to other AIs, or list connected MCP tools")
+    mc.add_argument("action", choices=["serve", "tools"])
+    mc.set_defaults(func=cmd_mcp)
 
     b = sub.add_parser("bench", help="benchmark the current model on engineering questions")
     b.add_argument("--model", help="Ollama model to test (default: FACTORY_AI_MODEL)")

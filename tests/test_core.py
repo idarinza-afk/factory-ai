@@ -148,3 +148,49 @@ def test_benchmark_run_with_mock_model():
     assert by["takt-01"]["score"] == 1.0
     assert by["memory-01"]["score"] < 1.0  # mock ignores the seeded rule
     assert "BETTER" in bench.compare(res, {**res, "score": 0.0, "model": "old"})
+
+
+def test_mcp_server_roundtrip(tmp_path):
+    import io
+    from factory_ai import mcp
+    msgs = [
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "takt_time", "arguments": {
+            "demand_units": 3600, "shifts": 1, "hours_per_shift": 1}}},
+        {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "add_rule", "arguments": {
+            "topic": "egg line", "rule": "add 10% buffer before the sealer"}}},
+        {"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "memory_stats", "arguments": {}}},
+    ]
+    out = io.StringIO()
+    mcp.serve(io.StringIO("\n".join(json.dumps(m) for m in msgs) + "\n"), out)
+    replies = {r["id"]: r for r in map(json.loads, out.getvalue().splitlines())}
+    assert replies[1]["result"]["serverInfo"]["name"] == "factory-ai"
+    names = {t["name"] for t in replies[2]["result"]["tools"]}
+    assert {"takt_time", "add_rule", "verify_case", "search_knowledge"} <= names
+    assert '"takt_time_s": 1.0' in replies[3]["result"]["content"][0]["text"]
+    assert '"feedback_rules": 1' in replies[5]["result"]["content"][0]["text"]
+
+
+def test_mcp_client_against_own_server(tmp_path, monkeypatch):
+    import sys
+    from factory_ai import mcp
+    from factory_ai.tools import REGISTRY
+    cfg = tmp_path / "mcp.json"
+    cfg.write_text(json.dumps({"servers": {"self": {"command": sys.executable, "args": ["-m", "factory_ai.cli", "mcp", "serve"],
+                                                   "env": {"FACTORY_AI_HOME": str(tmp_path / "srv")}}}}))
+    try:
+        n = mcp.connect_servers(cfg)
+        assert n > 5
+        # read-only-looking calc tool still needs confirmation because the server did not declare it read-only
+        mcp.CONFIRM = lambda name, args: False
+        assert "Not executed" in REGISTRY["self__takt_time"].call({"demand_units": 3600, "shifts": 1, "hours_per_shift": 1})
+        mcp.CONFIRM = lambda name, args: True
+        assert "takt_time_s" in REGISTRY["self__takt_time"].call({"demand_units": 3600, "shifts": 1, "hours_per_shift": 1})
+    finally:
+        mcp.close_all()
+        for k in [k for k in REGISTRY if k.startswith("self__")]:
+            del REGISTRY[k]
+    assert not mcp.needs_confirmation({"name": "read_tag", "annotations": {"readOnlyHint": True}}, False)
+    assert mcp.needs_confirmation({"name": "write_tag", "annotations": {"readOnlyHint": True}}, True)

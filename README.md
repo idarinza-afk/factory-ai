@@ -7,13 +7,25 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **factory-ai Pro** (see below).
 
-> Status: v0.1 (preview) — see [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.2 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![factory-ai calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
 ![Bottling line laid out by factory-ai in a U shape inside a 20 x 12 m room](docs/images/layout.png)
 
 ---
+
+## What's new
+
+**v0.2 — 2026-10-16**
+- 🔌 **MCP support.** `factory-ai mcp serve` lets Claude Desktop and other AI assistants use every
+  factory-ai tool — and record confirmed experience for you. factory-ai can also use other MCP servers
+  (3D/CAD, MQTT, OPC UA…); any external action needs your explicit "yes".
+- 📏 **Benchmark.** `factory-ai bench` scores a model on real engineering questions, so a new model or
+  fine-tune is released only if it is measurably better.
+- 🗺️ **Better layouts.** U-shaped / serpentine lines now turn correctly, with flow lines in the drawing.
+
+Full history: [CHANGELOG.md](CHANGELOG.md)
 
 ## What it does (free edition)
 
@@ -26,6 +38,8 @@ Free to use. PLC control logic, IoT and dashboards are coming in **factory-ai Pr
 | Knowledge | searchable engineering knowledge base, plus your own notes in `~/.factory-ai/knowledge` | `knowledge.py` |
 | Learning | experience memory, engineer-confirmed rules, dataset export for fine-tuning | `memory.py` |
 | Community | anonymised contribution packs to help train the shared model | `contribute.py` |
+| Benchmark | engineering questions graded against the calculation tools | `bench.py` |
+| MCP | serve factory-ai to other AI assistants; use other MCP servers safely | `mcp.py` |
 
 Core principle: **the AI never guesses numbers.** Every figure comes from a tested calculation function;
 the language model's job is to understand the request, pick the right tools and explain the result.
@@ -60,6 +74,34 @@ factory-ai pro                       # see what the Pro edition adds
 
 The calculation tools work without a language model — `factory-ai run` calls them directly.
 
+### Use it from Claude Desktop or other AI assistants (MCP)
+
+Add factory-ai to your MCP client configuration (for Claude Desktop: `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "factory-ai": { "command": "factory-ai", "args": ["mcp", "serve"] }
+  }
+}
+```
+
+The assistant can then call the calculation, layout and document tools, and save rules and
+verified cases you confirm (`add_rule`, `verify_case`, `add_verified_case`).
+
+To let factory-ai use other MCP servers, list them in `~/.factory-ai/mcp.json`:
+
+```json
+{
+  "servers": {
+    "cad":  { "command": "uvx", "args": ["some-cad-mcp"] },
+    "mqtt": { "command": "python", "args": ["-m", "my_mqtt_mcp"], "read_only": true }
+  }
+}
+```
+
+`factory-ai mcp tools` lists what is connected. Tools that could change anything ask for confirmation every time.
+
 ### Making it smarter
 
 ```bash
@@ -87,8 +129,8 @@ Takes the line you designed in the free edition into control and automation.
 
 | Capability | Details |
 |---|---|
-| **PLC control logic** | I/O list generated from the machine list, sequences converted to IEC 61131-3 Structured Text, standard function blocks (motor, valve, conveyor, alarm), automatic code checking, simulator testing, export to Siemens TIA / Mitsubishi GX Works / Omron Sysmac |
-| **IoT** | MQTT / OPC UA tag maps from the I/O list, read-only edge collector code, gateway configuration |
+| **PLC control logic** | I/O list generated from the machine list, sequences converted to IEC 61131-3 Structured Text, standard function blocks (motor, valve, conveyor, alarm), automatic code checking, compiling with a real IEC 61131-3 compiler, simulator testing, export to Siemens TIA / Mitsubishi GX Works / Omron Sysmac |
+| **IoT** | MQTT / OPC UA tag maps from the I/O list, read-only edge collector code, live OEE from MQTT, gateway configuration |
 | **Dashboards** | OEE and production dashboards built from your lines' data, downtime and reject analysis, shift reports and real-time dashboards |
 
 **Pricing** (prices to be announced)
