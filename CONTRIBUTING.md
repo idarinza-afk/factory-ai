@@ -1,29 +1,30 @@
-# ร่วมพัฒนา factory-ai / Contributing
+# Contributing to factory-ai
 
-มี 2 ทางที่ช่วยได้
+There are two ways to help.
 
-## A. ช่วยด้วยโค้ดและความรู้ (ไม่ต้องส่งข้อมูลงาน)
-ส่ง Pull Request เข้า repo นี้:
-- เครื่องมือคำนวณใหม่ (`factory_ai/calc/`) — ต้องมี unit test
-- Knowledge base (`factory_ai/knowledge_base/*.md`) — เขียนด้วยคำของตัวเอง ห้ามคัดลอกตำราหรือมาตรฐานที่มีลิขสิทธิ์
-- Template เครื่องจักร และ template เอกสาร
+## A. Contribute code and knowledge (no project data needed)
 
-## B. ช่วยเทรนโมเดลกลาง (Community LoRA)
+Open a Pull Request against this repository with:
+- New calculation tools (`factory_ai/calc/`) — unit tests required
+- Knowledge base articles (`factory_ai/knowledge_base/*.md`) — written in your own words; do not copy copyrighted textbooks or standards
+- Machine templates and document templates
 
-1. ใช้งานตามปกติ และ `verify` เฉพาะเคสที่ผ่านหน้างานจริง
-2. สร้างแพ็ก:
+## B. Help train the shared model (Community LoRA)
+
+1. Use factory-ai as usual, and `verify` only the cases that have been proven on site.
+2. Build a contribution pack:
    ```
-   factory-ai contribute --name "ชื่อที่จะแสดง" --secret "ชื่อลูกค้า" --secret "ชื่อโครงการ"
+   factory-ai contribute --name "Display name" --secret "Customer name" --secret "Project name"
    ```
-   - ระบบลบอีเมล, เบอร์โทร, URL, เลขผู้เสียภาษี, ราคา, ชื่อบริษัท และคำที่ระบุใน `--secret` อัตโนมัติ
-   - **คุณต้องดูและกดยอมรับทีละรายการ** รายการที่ไม่แน่ใจให้ข้าม
-3. ส่งไฟล์ `contribution.jsonl` เป็น Pull Request เข้า repo ข้อมูลชุมชน (จะเปิดในเฟสถัดไป)
-   ข้อมูลที่ส่งใช้สัญญาอนุญาต CC-BY-4.0
-4. CI สแกนหาข้อมูลส่วนตัวที่หลุด + ข้อมูลซ้ำ แล้วผู้ดูแลรีวิวก่อน merge
-5. ทุกไตรมาสเทรน Community LoRA รุ่นใหม่ และ **ปล่อยเฉพาะเมื่อคะแนน benchmark ดีกว่ารุ่นก่อน**
+   - Emails, phone numbers, URLs, tax IDs, prices, company names and every term passed with `--secret` are removed automatically.
+   - **You review and approve every record yourself.** Skip anything you are unsure about.
+3. Submit the resulting `contribution.jsonl` as a Pull Request to the community dataset repository (opening in a later phase).
+   Contributed data is licensed under CC-BY-4.0.
+4. CI scans incoming packs for leaked personal data and duplicates, and maintainers review them before merging.
+5. A new Community LoRA is trained every quarter and is **released only if it scores better than the previous version on the benchmark**.
 
-### ห้ามส่ง
-ข้อมูลลับของลูกค้า, ราคาซื้อขาย, แบบที่ติดสัญญา NDA, ข้อมูลส่วนบุคคล, โค้ด safety
+### Do not submit
+Confidential customer information, commercial prices, drawings covered by an NDA, personal data, or safety-related code.
 
-### เฟสถัดไป: Federated learning
-เทรนในเครื่องแต่ละคนแล้วส่งเฉพาะส่วนต่างของน้ำหนัก (LoRA delta) มารวม ข้อมูลไม่ต้องออกจากเครื่องเลย
+### Next phase: federated learning
+Each user trains locally and shares only the weight differences (LoRA deltas), so the data never leaves their machine.
