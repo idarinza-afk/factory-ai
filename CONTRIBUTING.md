@@ -1,20 +1,20 @@
-# Contributing to factory-ai
+# Contributing to Improvise
 
 There are two ways to help.
 
 ## A. Contribute code and knowledge (no project data needed)
 
 Open a Pull Request against this repository with:
-- New calculation tools (`factory_ai/calc/`) — unit tests required
-- Knowledge base articles (`factory_ai/knowledge_base/*.md`) — written in your own words; do not copy copyrighted textbooks or standards
+- New calculation tools (`improvise/calc/`) — unit tests required
+- Knowledge base articles (`improvise/knowledge_base/*.md`) — written in your own words; do not copy copyrighted textbooks or standards
 - Machine templates and document templates
 
 ## B. Help train the shared model (Community LoRA)
 
-1. Use factory-ai as usual, and `verify` only the cases that have been proven on site.
+1. Use Improvise as usual, and `verify` only the cases that have been proven on site.
 2. Build a contribution pack:
    ```
-   factory-ai contribute --name "Display name" --secret "Customer name" --secret "Project name"
+   improvise contribute --name "Display name" --secret "Customer name" --secret "Project name"
    ```
    - Emails, phone numbers, URLs, tax IDs, prices, company names and every term passed with `--secret` are removed automatically.
    - **You review and approve every record yourself.** Skip anything you are unsure about.

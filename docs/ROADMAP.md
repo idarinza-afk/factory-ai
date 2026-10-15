@@ -11,7 +11,7 @@
 
 ### v0.2 (done)
 - MCP server and client (safe-by-default confirmations)
-- Benchmark suite + `factory-ai bench`
+- Benchmark suite + `improvise bench`
 - U-shaped layout flow
 
 ### v0.3 (done)

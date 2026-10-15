@@ -1,4 +1,4 @@
-"""Experience memory - how factory-ai gets better over time.
+"""Experience memory - how improvise gets better over time.
 
 Three layers (see docs/LEARNING.md):
 
@@ -9,7 +9,7 @@ Three layers (see docs/LEARNING.md):
 3. export     - verified cases + feedback exported as a JSONL dataset for
                 periodic LoRA fine-tuning.
 
-Everything is a local SQLite file under FACTORY_AI_HOME. Nothing here is
+Everything is a local SQLite file under IMPROVISE_HOME. Nothing here is
 ever uploaded anywhere.
 """
 
@@ -161,7 +161,7 @@ class Memory:
                 if c["outcome"]:
                     answer += f"\n\nLessons from site: {c['outcome']}"
                 rec = {"messages": [
-                    {"role": "system", "content": "You are factory-ai, a production engineering assistant."},
+                    {"role": "system", "content": "You are improvise, a production engineering assistant."},
                     {"role": "user", "content": c["problem"]},
                     {"role": "assistant", "content": answer},
                 ]}
@@ -169,7 +169,7 @@ class Memory:
                 n += 1
             for r in self.conn.execute("SELECT * FROM feedback"):
                 rec = {"messages": [
-                    {"role": "system", "content": "You are factory-ai, a production engineering assistant."},
+                    {"role": "system", "content": "You are improvise, a production engineering assistant."},
                     {"role": "user", "content": f"What is the rule for: {r['topic']}?"},
                     {"role": "assistant", "content": r["rule"]},
                 ]}

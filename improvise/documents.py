@@ -1,6 +1,6 @@
 """Engineering documents: machine list, part list, operation & maintenance manual.
 
-Excel output uses openpyxl when installed (pip install factory-ai[docs]),
+Excel output uses openpyxl when installed (pip install improvise[docs]),
 otherwise CSV. Prices that are not supplied are left blank on purpose -
 the tool never invents prices.
 """

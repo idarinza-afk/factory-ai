@@ -112,17 +112,17 @@ PLUGINS: dict[str, object] = {}
 
 
 def load_plugins() -> dict[str, object]:
-    """Load add-on packages (e.g. factory-ai-pro) declared under the
-    'factory_ai.plugins' entry-point group. A plugin module may expose
+    """Load add-on packages (e.g. improvise-pro) declared under the
+    'improvise.plugins' entry-point group. A plugin module may expose
     register() to add tools, KNOWLEDGE_DIR, PROMPT and register_cli(subparsers)."""
     if PLUGINS:
         return PLUGINS
     from importlib.metadata import entry_points
-    for ep in entry_points(group="factory_ai.plugins"):
+    for ep in entry_points(group="improvise.plugins"):
         try:
             mod = ep.load()
         except Exception as e:  # a broken plugin must not break the core
-            print(f"[factory-ai] plugin {ep.name} failed to load: {e}")
+            print(f"[improvise] plugin {ep.name} failed to load: {e}")
             continue
         if hasattr(mod, "register"):
             mod.register()

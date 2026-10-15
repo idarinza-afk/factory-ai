@@ -1,7 +1,7 @@
 """Community contribution: share verified experience without leaking secrets.
 
 Flow (see CONTRIBUTING.md):
-  1. factory-ai contribute          -> anonymise verified cases + rules
+  1. improvise contribute          -> anonymise verified cases + rules
   2. the owner reviews EVERY record and accepts or skips it
   3. accepted records go into a contribution pack (JSONL)
   4. the pack is sent as a Pull Request to the community dataset repo
@@ -70,7 +70,7 @@ def build_pack(memory: Memory, out_path: str | Path, secret_terms: list[str] | N
             records.append(rec)
         else:
             skipped += 1
-    header = {"type": "header", "format": "factory-ai-contribution/1", "created": int(time.time()),
+    header = {"type": "header", "format": "improvise-contribution/1", "created": int(time.time()),
               "contributor": contributor, "license": "CC-BY-4.0", "records": len(records)}
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(header, ensure_ascii=False) + "\n")

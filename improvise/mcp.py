@@ -1,12 +1,12 @@
 """Model Context Protocol (MCP) support, dependency-free (JSON-RPC over stdio).
 
-Server  - `factory-ai mcp` exposes every factory-ai tool to any MCP client
+Server  - `improvise mcp` exposes every improvise tool to any MCP client
           (Claude Desktop, other agents). It also exposes teaching tools
           (add_rule, verify_case, memory_stats) so an assistant working with
           the engineer can record confirmed experience. Teaching tools are
           NOT given to the local model itself: it must not confirm its own work.
 
-Client  - factory-ai can use other MCP servers listed in ~/.factory-ai/mcp.json
+Client  - improvise can use other MCP servers listed in ~/.improvise/mcp.json
           (3D/CAD, MQTT, OPC UA, PLC IDE bridges...). Their tools appear to
           the local model as <server>__<tool>. Any tool that may change
           something (not marked read-only) needs a human "yes" for every call.
@@ -105,7 +105,7 @@ class Server:
                 result = {
                     "protocolVersion": msg.get("params", {}).get("protocolVersion", PROTOCOL_VERSION),
                     "capabilities": {"tools": {"listChanged": False}},
-                    "serverInfo": {"name": "factory-ai", "version": __version__},
+                    "serverInfo": {"name": "improvise", "version": __version__},
                     "instructions": "Production engineering tools. Use the calculation tools for every number. "
                                     "Only use add_rule / verify_case / add_verified_case for information the engineer has confirmed.",
                 }
@@ -186,7 +186,7 @@ class MCPClient:
 
     def start(self) -> list[dict]:
         self._request("initialize", {"protocolVersion": PROTOCOL_VERSION, "capabilities": {},
-                                     "clientInfo": {"name": "factory-ai", "version": __version__}})
+                                     "clientInfo": {"name": "improvise", "version": __version__}})
         self._notify("notifications/initialized")
         return self._request("tools/list").get("tools", [])
 

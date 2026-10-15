@@ -9,7 +9,7 @@ dist/
 .pytest_cache/
 
 # Local experience & private data - NEVER commit
-.factory-ai/
+.improvise/
 data/
 private/
 output/

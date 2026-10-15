@@ -9,9 +9,9 @@
    to the team members, they work with only their own tools on a shared project
    board, the consultant (if on the team) reviews, and the PM answers you.
 
-Teams are saved per project in ~/.factory-ai/teams/<project>.json and can be
-reopened. The role catalogue is team_roles.json (+ ~/.factory-ai/team_roles.json).
-Roles marked "pro" are only offered when factory-ai Pro is installed.
+Teams are saved per project in ~/.improvise/teams/<project>.json and can be
+reopened. The role catalogue is team_roles.json (+ ~/.improvise/team_roles.json).
+Roles marked "pro" are only offered when Improvise Pro is installed.
 """
 
 from __future__ import annotations

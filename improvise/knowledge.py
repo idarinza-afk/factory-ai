@@ -1,8 +1,8 @@
 """Knowledge base search (simple local RAG).
 
 Two sources are indexed:
-- factory_ai/knowledge_base/*.md  - general engineering knowledge shipped with the repo
-- FACTORY_AI_HOME/knowledge/**    - your own notes, datasheets converted to .md/.txt
+- improvise/knowledge_base/*.md  - general engineering knowledge shipped with the repo
+- IMPROVISE_HOME/knowledge/**    - your own notes, datasheets converted to .md/.txt
                                      (private, stays on your machine)
 
 Uses SQLite FTS5 (BM25) so it needs no extra install. Can be swapped for an

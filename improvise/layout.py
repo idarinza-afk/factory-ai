@@ -2,7 +2,7 @@
 
 The JSON export is CAD-neutral (positions in mm, footprint, rotation) so a 3D
 tool (Blender, FreeCAD, your own model library...) can place real models.
-Point FACTORY_AI_MODEL_LIBRARY to a folder with catalog.json to match machine
+Point IMPROVISE_MODEL_LIBRARY to a folder with catalog.json to match machine
 names against your own 3D model library.
 """
 
@@ -16,7 +16,7 @@ from .tools import tool
 
 
 def _catalog() -> dict[str, dict]:
-    lib = os.environ.get("FACTORY_AI_MODEL_LIBRARY")
+    lib = os.environ.get("IMPROVISE_MODEL_LIBRARY")
     if not lib:
         return {}
     f = Path(lib) / "catalog.json"

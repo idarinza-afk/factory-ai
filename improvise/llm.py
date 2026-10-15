@@ -1,7 +1,7 @@
 """Minimal client for a local Ollama server (no extra dependencies).
 
 Any model that supports tool calling in Ollama works (e.g. Qwen, Llama,
-Mistral families). Set FACTORY_AI_MODEL to choose one.
+Mistral families). Set IMPROVISE_MODEL to choose one.
 """
 
 from __future__ import annotations

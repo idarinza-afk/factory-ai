@@ -8,15 +8,15 @@ EX = Path(__file__).resolve().parent.parent / "examples"
 
 @pytest.fixture(autouse=True)
 def _home(tmp_path, monkeypatch):
-    monkeypatch.setenv("FACTORY_AI_HOME", str(tmp_path))
-    import factory_ai.memory as mem
-    import factory_ai.knowledge as kb
+    monkeypatch.setenv("IMPROVISE_HOME", str(tmp_path))
+    import improvise.memory as mem
+    import improvise.knowledge as kb
     mem._default = None
     kb._kb = None
 
 
 def test_takt_and_machines():
-    from factory_ai.calc.line import machines_required, takt_time
+    from improvise.calc.line import machines_required, takt_time
     t = takt_time(demand_units=57600, shifts=2, hours_per_shift=8, break_min_per_shift=60)
     assert t["available_time_s"] == 50400
     assert t["takt_time_s"] == pytest.approx(0.875)
@@ -25,14 +25,14 @@ def test_takt_and_machines():
 
 
 def test_line_capacity_bottleneck():
-    from factory_ai.calc.line import line_capacity
+    from improvise.calc.line import line_capacity
     r = line_capacity([{"name": "A", "rate_per_hour": 6000}, {"name": "B", "rate_per_hour": 5000, "oee": 0.9},
                        {"name": "C", "rate_per_hour": 2500, "parallel": 2}])
     assert r["bottleneck"] == "B" and r["line_output_per_hour"] == 4500
 
 
 def test_line_balance():
-    from factory_ai.calc.line import line_balance
+    from improvise.calc.line import line_balance
     tasks = [
         {"name": "a", "time_s": 20}, {"name": "b", "time_s": 30, "predecessors": ["a"]},
         {"name": "c", "time_s": 25, "predecessors": ["a"]}, {"name": "d", "time_s": 35, "predecessors": ["b", "c"]},
@@ -50,8 +50,8 @@ def test_line_balance():
 
 
 def test_oee_and_roi():
-    from factory_ai.calc.oee import oee
-    from factory_ai.calc.roi import roi
+    from improvise.calc.oee import oee
+    from improvise.calc.roi import roi
     r = oee(planned_time_min=420, downtime_min=47, ideal_cycle_time_s=1.0, total_count=19271, good_count=18848)
     assert r["oee"] == pytest.approx(0.7479, abs=1e-3)
     x = roi(investment=1000, annual_net_cashflow=[400, 400, 400, 400])
@@ -60,7 +60,7 @@ def test_oee_and_roi():
 
 
 def test_tools_registry_schema():
-    from factory_ai.tools import load_all
+    from improvise.tools import load_all
     reg = load_all()
     for name in ["takt_time", "line_balance", "oee", "roi", "make_machine_list", "layout_line",
                  "recall_experience"]:
@@ -71,7 +71,7 @@ def test_tools_registry_schema():
 
 
 def test_memory_learning_loop(tmp_path):
-    from factory_ai.memory import Memory
+    from improvise.memory import Memory
     m = Memory(tmp_path / "x.db")
     cid = m.add_case("line_design", "Egg packing line", "pack boiled eggs into trays 8000 eggs per hour",
                      "2 tray loaders + 1 sealer")
@@ -85,8 +85,8 @@ def test_memory_learning_loop(tmp_path):
 
 
 def test_layout_and_documents(tmp_path):
-    from factory_ai.documents import make_machine_list, make_manual
-    from factory_ai.layout import layout_line
+    from improvise.documents import make_machine_list, make_manual
+    from improvise.layout import layout_line
     spec = json.loads((EX / "bottling_line.json").read_text())
     r = layout_line(**spec)
     assert r["fits_room"] is True and Path(r["svg"]).exists() and Path(r["json_for_3d"]).exists()
@@ -97,8 +97,8 @@ def test_layout_and_documents(tmp_path):
 
 
 def test_contribution_anonymises(tmp_path):
-    from factory_ai.contribute import anonymise, build_pack, scan_for_leaks
-    from factory_ai.memory import Memory
+    from improvise.contribute import anonymise, build_pack, scan_for_leaks
+    from improvise.memory import Memory
     m = Memory(tmp_path / "c.db")
     cid = m.add_case("roi", "Line for Acme Foods Co., Ltd.", "contact john@acme.com +66 81 234 5678",
                      "quoted 1,250,000 บาท for Secret Farm")
@@ -113,7 +113,7 @@ def test_contribution_anonymises(tmp_path):
 
 
 def test_benchmark_references_and_grader():
-    from factory_ai import bench
+    from improvise import bench
     items = bench.load_items()
     assert len(items) >= 15
     assert len({i["id"] for i in items}) == len(items)
@@ -132,7 +132,7 @@ def test_benchmark_references_and_grader():
 
 
 def test_benchmark_run_with_mock_model():
-    from factory_ai import bench
+    from improvise import bench
 
     class Mock:
         def chat(self, messages, tools=None):
@@ -152,7 +152,7 @@ def test_benchmark_run_with_mock_model():
 
 def test_mcp_server_roundtrip(tmp_path):
     import io
-    from factory_ai import mcp
+    from improvise import mcp
     msgs = [
         {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
         {"jsonrpc": "2.0", "method": "notifications/initialized"},
@@ -166,7 +166,7 @@ def test_mcp_server_roundtrip(tmp_path):
     out = io.StringIO()
     mcp.serve(io.StringIO("\n".join(json.dumps(m) for m in msgs) + "\n"), out)
     replies = {r["id"]: r for r in map(json.loads, out.getvalue().splitlines())}
-    assert replies[1]["result"]["serverInfo"]["name"] == "factory-ai"
+    assert replies[1]["result"]["serverInfo"]["name"] == "improvise"
     names = {t["name"] for t in replies[2]["result"]["tools"]}
     assert {"takt_time", "add_rule", "verify_case", "search_knowledge"} <= names
     assert '"takt_time_s": 1.0' in replies[3]["result"]["content"][0]["text"]
@@ -175,11 +175,11 @@ def test_mcp_server_roundtrip(tmp_path):
 
 def test_mcp_client_against_own_server(tmp_path, monkeypatch):
     import sys
-    from factory_ai import mcp
-    from factory_ai.tools import REGISTRY
+    from improvise import mcp
+    from improvise.tools import REGISTRY
     cfg = tmp_path / "mcp.json"
-    cfg.write_text(json.dumps({"servers": {"self": {"command": sys.executable, "args": ["-m", "factory_ai.cli", "mcp", "serve"],
-                                                   "env": {"FACTORY_AI_HOME": str(tmp_path / "srv")}}}}))
+    cfg.write_text(json.dumps({"servers": {"self": {"command": sys.executable, "args": ["-m", "improvise.cli", "mcp", "serve"],
+                                                   "env": {"IMPROVISE_HOME": str(tmp_path / "srv")}}}}))
     try:
         n = mcp.connect_servers(cfg)
         assert n > 5
@@ -197,7 +197,7 @@ def test_mcp_client_against_own_server(tmp_path, monkeypatch):
 
 
 def test_project_team_pm_led(tmp_path):
-    from factory_ai.team import ProjectTeam, load_roles
+    from improvise.team import ProjectTeam, load_roles
 
     class Mock:
         def __init__(self):

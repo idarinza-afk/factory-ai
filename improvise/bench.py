@@ -11,7 +11,7 @@ Each item in benchmarks/*.jsonl is an engineering question with:
               to test that confirmed experience changes the answer.
 
 Each item scores 0..1 (answer checks 80%, tool use 20%). Results are saved as
-JSON so models can be compared:  factory-ai bench --compare old.json
+JSON so models can be compared:  improvise bench --compare old.json
 """
 
 from __future__ import annotations

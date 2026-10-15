@@ -1,17 +1,17 @@
 """Command line interface.
 
-  factory-ai chat                         interactive assistant (needs Ollama)
-  factory-ai ask "question"               one-shot question
-  factory-ai tools                        list engineering tools
-  factory-ai run <tool> '<json args>'     run a tool directly, no LLM needed
-  factory-ai memory add|verify|rule|search|stats|export
-  factory-ai pro                          what the Pro edition adds
-  factory-ai bench [--model m] [--compare old.json]   score a model on engineering questions
-  factory-ai team [--project name]        talk to your Project Manager, who builds and leads a team
-  factory-ai team "brief..." | team --list
-  factory-ai mcp serve | mcp tools        MCP server for other AIs / list tools from ~/.factory-ai/mcp.json
-  factory-ai contribute [--secret "Customer A" ...]
-  factory-ai doctor                       check the local setup
+  improvise chat                         interactive assistant (needs Ollama)
+  improvise ask "question"               one-shot question
+  improvise tools                        list engineering tools
+  improvise run <tool> '<json args>'     run a tool directly, no LLM needed
+  improvise memory add|verify|rule|search|stats|export
+  improvise pro                          what the Pro edition adds
+  improvise bench [--model m] [--compare old.json]   score a model on engineering questions
+  improvise team [--project name]        talk to your Project Manager, who builds and leads a team
+  improvise team "brief..." | team --list
+  improvise mcp serve | mcp tools        MCP server for other AIs / list tools from ~/.improvise/mcp.json
+  improvise contribute [--secret "Customer A" ...]
+  improvise doctor                       check the local setup
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ def cmd_chat(args) -> None:
         except LLMError as e:
             sys.exit(str(e))
         return
-    print("factory-ai - type 'exit' to quit, '/save' to save the last answer as a case")
+    print("improvise - type 'exit' to quit, '/save' to save the last answer as a case")
     last_q = last_a = ""
     while True:
         try:
@@ -68,7 +68,7 @@ def cmd_chat(args) -> None:
             title = input("title: ").strip() or last_q[:60]
             kind = input("kind (line_design/machine_list/plc/iot/roi/other): ").strip() or "other"
             cid = default_memory().add_case(kind, title, last_q, last_a)
-            print(f"saved as case #{cid}. Verify it later with: factory-ai memory verify {cid} \"site result\"")
+            print(f"saved as case #{cid}. Verify it later with: improvise memory verify {cid} \"site result\"")
             continue
         if not q:
             continue
@@ -95,7 +95,7 @@ def cmd_run(args) -> None:
     reg = load_all()
     register_kb_tool()
     if args.tool not in reg:
-        sys.exit(f"unknown tool {args.tool}. See: factory-ai tools")
+        sys.exit(f"unknown tool {args.tool}. See: improvise tools")
     raw = args.args
     if raw and Path(raw).exists():
         raw = Path(raw).read_text(encoding="utf-8")
@@ -122,7 +122,7 @@ def cmd_memory(args) -> None:
         print(f"wrote {n} training records to {args.out}")
 
 
-PRO_INFO = """factory-ai Pro (coming soon) - for control and automation work
+PRO_INFO = """Improvise Pro (coming soon) - for control and automation work
 
   PLC control logic   I/O list, sequence -> IEC 61131-3 Structured Text, standard
                       function blocks, static check, simulator test loop,
@@ -144,7 +144,7 @@ Interested? Open an issue on GitHub with the label 'pro-interest'.
 def cmd_pro(args) -> None:
     from .tools import load_plugins
     if "pro" in load_plugins():
-        print("factory-ai Pro is installed. Run 'factory-ai tools' to see the Pro tools.")
+        print("Improvise Pro is installed. Run 'improvise tools' to see the Pro tools.")
     else:
         print(PRO_INFO)
 
@@ -220,7 +220,7 @@ def cmd_team(args) -> None:
         for k, r in load_roles().items():
             tag = " (you talk to this one)" if r.get("lead") else " (reviewer)" if r.get("reviewer") else " [Pro]" if r.get("pro") else ""
             print(f"{k:22s} {r['title']}{tag}")
-        print("\nRole catalogue. Add your own in ~/.factory-ai/team_roles.json. Saved projects: "
+        print("\nRole catalogue. Add your own in ~/.improvise/team_roles.json. Saved projects: "
               + (", ".join(ProjectTeam.list_projects()) or "none"))
         return
     if args.brief:  # one-shot, non-interactive
@@ -321,7 +321,7 @@ def cmd_mcp(args) -> None:
         for name, t in sorted(REGISTRY.items()):
             if "__" in name:
                 print(f"{name:40s} {t.description[:90]}")
-        print(f"{n} external tools" if n else "no MCP servers configured (see ~/.factory-ai/mcp.json)")
+        print(f"{n} external tools" if n else "no MCP servers configured (see ~/.improvise/mcp.json)")
         mcp.close_all()
 
 
@@ -348,7 +348,7 @@ def cmd_doctor(args) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    p = argparse.ArgumentParser(prog="factory-ai", description="Local AI for production engineering")
+    p = argparse.ArgumentParser(prog="improvise", description="Local AI for production engineering")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     c = sub.add_parser("chat", help="interactive assistant")
@@ -396,7 +396,7 @@ def main(argv: list[str] | None = None) -> None:
     co.set_defaults(func=cmd_contribute)
 
     sub.add_parser("doctor", help="check setup").set_defaults(func=cmd_doctor)
-    sub.add_parser("pro", help="what factory-ai Pro adds").set_defaults(func=cmd_pro)
+    sub.add_parser("pro", help="what Improvise Pro adds").set_defaults(func=cmd_pro)
 
     tm = sub.add_parser("team", help="work on a brief as a project team (PM, consultant, engineers...)")
     tm.add_argument("brief", nargs="*", help="give a brief for a one-shot run; omit to talk to the PM interactively")
@@ -405,12 +405,12 @@ def main(argv: list[str] | None = None) -> None:
     tm.add_argument("--list", action="store_true", help="list the role catalogue and saved projects")
     tm.set_defaults(func=cmd_team)
 
-    mc = sub.add_parser("mcp", help="MCP: serve factory-ai to other AIs, or list connected MCP tools")
+    mc = sub.add_parser("mcp", help="MCP: serve improvise to other AIs, or list connected MCP tools")
     mc.add_argument("action", choices=["serve", "tools"])
     mc.set_defaults(func=cmd_mcp)
 
     b = sub.add_parser("bench", help="benchmark the current model on engineering questions")
-    b.add_argument("--model", help="Ollama model to test (default: FACTORY_AI_MODEL)")
+    b.add_argument("--model", help="Ollama model to test (default: IMPROVISE_MODEL)")
     b.add_argument("--file", help="custom benchmark JSONL")
     b.add_argument("--only", help="item id prefix or category")
     b.add_argument("--limit", type=int)
