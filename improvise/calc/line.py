@@ -206,6 +206,8 @@ def product_spacing(product_length_mm: float, gap_mm: float, rate_per_min: float
     v_out = rate_per_min * p_out / 1000
     return {"infeed_speed_m_per_min": round(v_in, 2), "outfeed_speed_m_per_min": round(v_out, 2),
             "speed_ratio": round(v_out / v_in, 3), "outfeed_pitch_mm": p_out,
+            "next_step": (f"If motors are needed: call conveyor_sizing for EACH conveyor - infeed with pitch_mm={p_in:g}, "
+                          f"outfeed with pitch_mm={p_out:g}, same rate_per_min={rate_per_min:g}."),
             "notes": ["each product is pulled away once its centre of gravity passes onto the faster belt",
                       "keep the transfer short (dead plate or nose-over) so products do not tip",
                       "use a VFD on the faster conveyor (at least) to fine-tune the ratio on site",

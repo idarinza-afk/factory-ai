@@ -113,8 +113,8 @@ class Agent:
         if len(claims) >= 3:
             shown = ", ".join(f"{c:g}" for c in claims[:8])
             return (f"Number check: these figures are not from the user, a tool result or the references: {shown}. "
-                    "Recompute them with the calculation tools, or clearly label them as assumptions/typical values. "
-                    "Then give the corrected final answer.")
+                    "Recompute them with the calculation tools, or label them as assumptions/typical values. Then write "
+                    "the complete final answer again for the user - do not mention this check.")
         return None
 
     def _guard(self, answer: str, called: set[str], allowed: set[str]) -> str | None:
