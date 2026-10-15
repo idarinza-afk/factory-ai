@@ -1,7 +1,7 @@
 ---
 name: layout-design
 description: Arrange machines into a line layout and check the room: flow, aisles, hygiene zones, maintenance access.
-tools: layout_line, search_knowledge
+tools: layout_line, layout_dxf, layout_3d, search_knowledge
 ---
 ## Rules
 - One-directional flow; raw and finished product never cross; people/material flow from low to high care
@@ -16,4 +16,5 @@ tools: layout_line, search_knowledge
 1. Get machine footprints (L x W) in flow order and the room size.
 2. layout_line with rows=1, then rows=2 if it does not fit; compare envelopes.
 3. Check panels, aisles and doors; list what still needs to be verified on site (columns, drains, door heights).
-4. Hand off the JSON for 3D.
+4. layout_dxf with layout_line's machines -> A3 DXF drawing (frame, equipment list, title block, dims in m).
+5. layout_3d -> OBJ model + HTML 3D viewer (top/front/side views).

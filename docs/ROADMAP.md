@@ -32,7 +32,10 @@
 ### v0.8 (done)
 - Flowchart first, manual ingest + alarm lookup, multilingual routing
 
-### v0.9
+### v0.9 (done)
+- 2D DXF / 3D / electrical drawings, machine knowledge, challenge benchmark
+
+### v0.10
 - Desktop/web UI (chat + forms + file previews)
 - Quotation / proposal package: 2D drawing, 3D views, machine spec, machine list in one bundle
 - Utility calculator (power, compressed air, water, steam)

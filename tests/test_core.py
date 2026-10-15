@@ -391,3 +391,62 @@ def test_product_spacing_and_language():
     assert r["speed_ratio"] == 2.0 and r["infeed_speed_m_per_min"] == 6.0 and r["outfeed_speed_m_per_min"] == 12.0
     from improvise.agent import Agent
     assert Agent.detect_language("สายพาน") == "Thai" and Agent.detect_language("hello") == ""
+
+
+def test_dxf_and_units():
+    import ezdxf
+    from improvise.drawing import convert_units, layout_dxf
+    from improvise.layout import layout_line
+    spec = json.loads((EX / "bottling_line.json").read_text())
+    lay = layout_line(**spec)
+    r = layout_dxf("Bottling line layout", lay["machines"], 20000, 12000, "Demo Co", "DWG-001")
+    doc = ezdxf.readfile(r["dxf"])
+    texts = [e.dxf.text for e in doc.modelspace().query("TEXT")]
+    assert "EQUIPMENT LIST" in texts and any("1:" in t for t in texts) and any(t.endswith(" m") for t in texts)
+    assert convert_units(6, "bar", "psi")["value"] == pytest.approx(87.02, abs=0.01)
+    assert convert_units(100, "C", "F")["value"] == 212
+    with pytest.raises(ValueError):
+        convert_units(1, "kg", "bar")
+
+
+def test_guard_sends_hand_made_ladder_back():
+    from improvise.agent import Agent
+    from improvise.config import load
+    from improvise import tools as T
+    import types
+    T.load_all()
+    added = "plc_generate_ladder" not in T.REGISTRY
+    T.REGISTRY.setdefault("plc_generate_ladder", T.REGISTRY["takt_time"])
+    fake = types.SimpleNamespace(GUARDS=[(r"```\s*ladder", "plc_generate_ladder", "use the generator")])
+    T.PLUGINS["fake"] = fake
+    try:
+        class Mock:
+            n = 0
+            def chat(self, messages, tools=None):
+                Mock.n += 1
+                if Mock.n == 1:
+                    return {"role": "assistant", "content": "```ladder\n|--[ a ]--( b )--|\n```"}
+                return {"role": "assistant", "content": "done properly"}
+        a = Agent(load()); a.llm = Mock()
+        assert a.ask("write ladder") == "done properly"
+        assert any(m.get("role") == "user" and ("generator" in m.get("content", "") or "plc_generate_ladder" in m.get("content", ""))
+                   for m in a.messages[2:])
+    finally:
+        T.PLUGINS.pop("fake", None)
+        if added:
+            T.REGISTRY.pop("plc_generate_ladder", None)
+
+
+def test_3d_and_electrical():
+    from improvise.electrical import electrical_schematic
+    from improvise.layout import layout_line
+    from improvise.model3d import layout_3d
+    lay = layout_line("Gapper", [{"name": "Infeed", "length_mm": 3000, "width_mm": 600},
+                                 {"name": "Gapping", "length_mm": 3000, "width_mm": 600}], gap_mm=0)
+    r = layout_3d("Gapper", lay["machines"])
+    assert Path(r["obj"]).read_text().count("\nv ") == 24 and "three" in Path(r["viewer_html"]).read_text()
+    e = electrical_schematic("Gapper", [{"tag": "M1", "name": "Infeed", "kw": 0.18, "starter": "dol"},
+                                        {"tag": "M2", "name": "Gapping", "kw": 0.18, "starter": "vfd"}],
+                             [{"tag": "B1", "name": "Transfer eye"}], [{"tag": "K1", "name": "M1 run"}])
+    svg = Path(e["power_svg"]).read_text()
+    assert "VFD" in svg and "MPCB" in svg and Path(e["components_csv"]).exists() and e["connected_motor_load_kW"] == 0.36

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.9 — 2026-10-16
+### Added
+- layout_dxf (A3 DXF), layout_3d (OBJ + HTML viewer), electrical_schematic (power + control SVG/HTML, component CSV).
+- 16 researched machine articles (knowledge_base/machine_*.md, sources listed in each).
+- product_spacing, convert_units; skills electrical-design, product-spacing-and-gapping.
+- Challenge benchmark (benchmarks/challenge.jsonl); answer guards provided by plugins.
+- `cad` extra (ezdxf).
+
 ## v0.8 — 2026-10-16
 ### Added
 - Flowchart first: `make_flowchart` (Mermaid + HTML preview, structure check) and the rule that new processes,

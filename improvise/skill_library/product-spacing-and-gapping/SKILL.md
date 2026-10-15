@@ -1,7 +1,7 @@
 ---
 name: product-spacing-and-gapping
 description: Separate touching products on conveyors (gapping, spacing, singulation) with a speed step-up, timing screw or metering belt; size both conveyors, sensors, drives and the control.
-tools: product_spacing, conveyor_sizing, make_flowchart, plc_io_list, plc_generate_ladder, plc_simulate
+tools: product_spacing, conveyor_sizing, make_flowchart, layout_line, layout_dxf, layout_3d, electrical_schematic, plc_io_list, plc_generate_ladder, plc_simulate
 ---
 ## Principle
 Products touching on the infeed (pitch = length L) need pitch L + gap on the outfeed. At the same rate
@@ -18,7 +18,9 @@ Gap = L means the outfeed runs TWICE as fast as the infeed. Always calculate wit
 4. Control logic: flowchart first (start, run, jam = transfer sensor blocked too long, gap fault = gap
    shorter than limit, stop, reset). Then a state-machine spec -> plc_generate_ladder -> plc_simulate with a
    product timeline. Never hand-write ladder.
-5. Speeds via VFD references (analog or fieldbus); ratio as a parameter so it can be tuned on site.
+5. Drawings: layout_line -> layout_dxf (2D A3) and layout_3d (3D); electrical_schematic with both motors
+   (VFD on the outfeed), sensors and outputs.
+6. Speeds via VFD references (analog or fieldbus); ratio as a parameter so it can be tuned on site.
 
 ## Checks
 - Outfeed speed = ratio x infeed speed (not equal speeds).

@@ -90,6 +90,17 @@ class Agent:
             chosen |= {t for t in sk.tools if t in names}
         return chosen | {n for n in self.ALWAYS if n in names}
 
+    def _guard(self, answer: str, called: set[str], allowed: set[str]) -> str | None:
+        """Catch answers that hand-make what a tool must produce (e.g. ladder text without the generator).
+        Guards come from plugins: GUARDS = [(regex, required_tool, message)]."""
+        from .tools import PLUGINS
+        for mod in PLUGINS.values():
+            for pattern, tool, message in getattr(mod, "GUARDS", []):
+                if tool in REGISTRY and tool not in called and re.search(pattern, answer, re.I | re.M):
+                    allowed.add(tool)
+                    return message
+        return None
+
     def _schemas(self, allowed: set[str] | None = None) -> list[dict]:
         if not self.use_tools:
             return []
@@ -135,6 +146,8 @@ class Agent:
                 f"({src}) {body[:900]}" for src, body in refs)
         self.messages.append({"role": "user", "content": content})
         allowed = self._select_tools(text)
+        called_tools: set[str] = set()
+        guard_retries = 0
         if "make_flowchart" in REGISTRY and self.use_tools and self.tool_names is None:
             allowed.add("make_flowchart")
         seen: dict[str, str] = {}
@@ -149,7 +162,13 @@ class Agent:
             self.messages.append(msg)
             calls = msg.get("tool_calls") or []
             if not calls:
-                return msg.get("content", "")
+                answer = msg.get("content", "")
+                fix = None if last_round else self._guard(answer, called_tools, allowed)
+                if fix and guard_retries < 2:
+                    guard_retries += 1
+                    self.messages.append({"role": "user", "content": fix})
+                    continue
+                return answer
             for call in calls:
                 fn = call.get("function", {})
                 name, args = fn.get("name"), fn.get("arguments", {})
@@ -158,6 +177,7 @@ class Agent:
                         args = json.loads(args or "{}")
                     except json.JSONDecodeError:
                         args = {}
+                called_tools.add(name)
                 key = f"{name}:{json.dumps(args, sort_keys=True, default=str)}"
                 tool = REGISTRY.get(name) if name in allowed else None
                 if key in seen:

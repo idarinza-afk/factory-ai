@@ -41,7 +41,9 @@
       "layout_line",
       "search_knowledge",
       "recall_experience",
-      "make_flowchart"
+      "make_flowchart",
+      "layout_dxf",
+      "layout_3d"
     ]
   },
   "electrical_engineer": {
@@ -51,7 +53,8 @@
       "make_machine_list",
       "search_knowledge",
       "recall_experience",
-      "plc_io_list"
+      "plc_io_list",
+      "electrical_schematic"
     ]
   },
   "automation_engineer": {

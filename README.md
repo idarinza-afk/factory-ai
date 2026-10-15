@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.8 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.9 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![Improvise calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +16,20 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.9 — 2026-10-16**
+- 📐 **2D, 3D and electrical drawings.** `layout_dxf` writes an A3 DXF layout (frame, equipment list, title block,
+  dimensions in metres) for any CAD program; `layout_3d` exports an OBJ model plus a browser 3D viewer with
+  top/front/side views; `electrical_schematic` draws concept power and control/PLC I/O sheets with a component list.
+- 📚 **16 machine knowledge articles** researched from manufacturer and engineering sources and written for
+  Improvise: conveyors, VFFS, flow wrappers, weighers & fillers, checkweighers, metal detectors, X-ray, retorts,
+  tray sealers & thermoformers, cartoners, case packers, labellers & coders, palletisers, cookers/blanchers/fryers,
+  spiral freezers, CIP — each with selection notes, integration, hygiene and a troubleshooting table.
+- 🧪 **Challenge benchmark** with questions of rising difficulty (levels 2–5: multi-step sizing, Thai batch
+  heat-up, flowchart-first, no invented prices, labour ROI).
+- ✋ **Answer guards:** if the model hand-writes what a tool must produce (e.g. ladder text), the answer is sent back
+  to use the right tool.
+- New: product spacing / gapping calculator and skill, unit converter, electrical design skill.
 
 **v0.8 — 2026-10-16**
 - 🗺️ **Flowchart first.** For any new process, machine sequence or control logic without a given workflow,
@@ -105,6 +119,8 @@ Full history: [CHANGELOG.md](CHANGELOG.md)
 | Coding | workspace to write, run and version Python programs | `coding.py` |
 | Connectors | one-command connection to FreeCAD, Blender, Excel, Grafana, InfluxDB, OPC UA… | `connectors.py` |
 | Self-protection | daily backups, self-test, safe update with automatic rollback | `guard.py` |
+| Drawings | A3 DXF layouts, 3D model + viewer, electrical schematics | `drawing.py`, `model3d.py`, `electrical.py` |
+| Machine knowledge | 16 machine types: selection, integration, hygiene, troubleshooting | `knowledge_base/machine_*.md` |
 
 Core principle: **the AI never guesses numbers.** Every figure comes from a tested calculation function;
 the language model's job is to understand the request, pick the right tools and explain the result.
