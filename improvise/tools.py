@@ -44,6 +44,13 @@ class Tool:
     def call(self, arguments: dict | str) -> Any:
         if isinstance(arguments, str):
             arguments = json.loads(arguments or "{}")
+        props = self.parameters.get("properties", {})
+        if props and not self.name.count("__"):  # validate local tools; external servers validate themselves
+            unknown = [k for k in arguments if k not in props]
+            missing = [k for k in self.parameters.get("required", []) if k not in arguments]
+            if unknown or missing:
+                raise ValueError(f"wrong parameters for {self.name}: "
+                                 + (f"unknown {unknown} " if unknown else "") + (f"missing {missing}" if missing else ""))
         return self.func(**arguments)
 
 

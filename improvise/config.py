@@ -38,6 +38,7 @@ class Config:
     temperature: float = 0.2
     think: bool = field(default_factory=lambda: str(_env("THINK", "0")).lower() in ("1", "true", "yes"))
     max_tool_rounds: int = 8
+    max_tools: int = field(default_factory=lambda: int(_env("MAX_TOOLS", "10")))
 
     @property
     def db_path(self) -> Path:

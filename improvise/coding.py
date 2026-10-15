@@ -69,7 +69,7 @@ def workspace_list(folder: str = "") -> list:
     """
     root = workspace()
     base = _safe_path(folder) if folder else root
-    return sorted(str(f.relative_to(root)) for f in base.rglob("*") if f.is_file())[:500]
+    return sorted(f.relative_to(root).as_posix() for f in base.rglob("*") if f.is_file())[:500]
 
 
 @tool

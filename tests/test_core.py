@@ -253,7 +253,7 @@ def test_coding_workspace_and_run(tmp_path):
     from improvise import safety
     from improvise.coding import run_python, workspace_list, workspace_read, workspace_write
     workspace_write("sim/hello.py", "import sys\nprint('takt', 50400/20000, *sys.argv[1:])\n")
-    assert "sim/hello.py" in [p.replace("\\\\", "/") for p in workspace_list()]
+    assert "sim/hello.py" in workspace_list()
     assert "takt" in workspace_read("sim/hello.py")
     with pytest.raises(ValueError):
         workspace_write("../escape.txt", "x")
