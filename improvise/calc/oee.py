@@ -9,6 +9,9 @@ from ..tools import tool
 def oee(planned_time_min: float, downtime_min: float, ideal_cycle_time_s: float, total_count: int, good_count: int,
         planned_breaks_min: float = 0) -> dict:
     """Overall Equipment Effectiveness with its three factors and the main loss.
+    Example: one 8 h shift, 60 min planned breaks, 45 min unplanned stops, 1.2 s ideal cycle, 16,500 made, 300 rejects
+    -> planned_time_min=480, planned_breaks_min=60, downtime_min=45, ideal_cycle_time_s=1.2, total_count=16500,
+    good_count=16200. Report the tool's availability, performance, quality and oee as they are.
 
     Args:
         planned_time_min: shift / period length in minutes (e.g. 8 h = 480)

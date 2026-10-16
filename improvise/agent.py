@@ -200,7 +200,9 @@ class Agent:
         return None
 
     PROMISE = re.compile(r"\b(I will now|I'll now|let'?s proceed|let me now|next,? I will|I will (now )?(create|draw|generate|make)"
-                         r"|let me (adjust|fix|correct|update|try again|re-?run|simulate again)|I'?ll (adjust|fix|correct) (this|it|the))\b"
+                         r"|let me (adjust|fix|correct|update|try again|re-?run|simulate again)|I'?ll (adjust|fix|correct) (this|it|the)"
+                         r"|(now,? )?let'?s (update|simulate|try|run|call|fix|adjust|generate|re-?run)"
+                         r"|(here'?s|here is) the corrected (simulation|events|spec))\b"
                          r"|จะดำเนินการ|ต่อไปจะ(สร้าง|วาด|ทำ)", re.I)
 
     def _required_tool(self, called: set[str], allowed: set[str]) -> str | None:
