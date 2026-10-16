@@ -129,6 +129,8 @@ class Agent:
          "electrical_schematic", False),
         (r"\boee\b", "oee", True),
         (r"model library|from (our|the|my) library|in the library|คลังโมเดล|จากคลัง|ในคลัง", "find_machine_model", False),
+        (r"datasheet|rated (output )?torque|permissible radial|radial load|overhung|รับแรง(ใน)?แนวรัศมี|แรงบิดพิกัด",
+         "gearmotor_check", True),
         (r"shaft diameter|đường kính trục|เส้นผ่าน(ศูนย์กลาง)?เพลา|ขนาดเพลา|轴径|軸径", "shaft_diameter", True),
         (r"\bcpk?\b", "process_capability", True),
         (r"line balanc|workstations|สมดุลไลน์", "line_balance", True),
@@ -205,7 +207,8 @@ class Agent:
     PROMISE = re.compile(r"\b(I will now|I'll now|let'?s proceed|let me now|next,? I will|I will (now )?(create|draw|generate|make)"
                          r"|let me (adjust|fix|correct|update|try again|re-?run|simulate again)|I'?ll (adjust|fix|correct) (this|it|the)"
                          r"|(now,? )?let'?s (update|simulate|try|run|call|fix|adjust|generate|re-?run)"
-                         r"|(here'?s|here is) the corrected (simulation|events|spec))\b"
+                         r"|(here'?s|here is) the corrected (simulation|events|spec)"
+                         r"|let me know if you (want|would like) me to (adjust|fix|re-?simulate|re-?run|update|correct|try))\b"
                          r"|จะดำเนินการ|ต่อไปจะ(สร้าง|วาด|ทำ)", re.I)
 
     def _required_tool(self, called: set[str], allowed: set[str]) -> str | None:
