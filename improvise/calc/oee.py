@@ -30,6 +30,11 @@ def oee(planned_time_min: float, downtime_min: float, ideal_cycle_time_s: float,
     p = (ideal_cycle_time_s * total_count) / (run_min * 60)
     q = good_count / total_count if total_count else 0.0
     factors = {"availability": a, "performance": p, "quality": q}
+    if p > 1.05:
+        raise ValueError(
+            f"performance would be {p:.0%} - impossible. Check: planned_time_min is the whole shift and breaks are "
+            "given ONCE in planned_breaks_min (not subtracted twice); downtime_min is only unplanned stops; "
+            "ideal_cycle_time_s is seconds per unit at rated speed; total_count includes rejects.")
     worst = min(factors, key=factors.get)
     return {
         **{k: round(v, 4) for k, v in factors.items()},

@@ -188,6 +188,14 @@ class Agent:
             if name == tool and not args.get(arg) and re.search(pattern, q, re.I):
                 if tool == "takt_from_rate" and not args.get("hours_per_shift"):
                     continue  # a pure rate question: breaks do not matter
+                if tool == "oee":  # warn only when the planned time is the stated shift length (breaks still inside)
+                    hours = [float(h) * 60 for h in re.findall(r"(\d+(?:\.\d+)?)\s*-?\s*(?:h\b|hr|hour|ชั่วโมง|時間|小时|giờ|jam)", q)]
+                    try:
+                        planned = float(args.get("planned_time_min", 0))
+                    except (TypeError, ValueError):
+                        planned = 0
+                    if not any(abs(planned - h) < 1 for h in hours):
+                        continue
                 return note
         return None
 
