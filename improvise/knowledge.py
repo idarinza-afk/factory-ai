@@ -33,7 +33,7 @@ def _chunks(text: str, size: int = 1200) -> list[str]:
 
 class KnowledgeBase:
     def __init__(self, extra_dirs: list[Path] | None = None):
-        self.conn = sqlite3.connect(":memory:")
+        self.conn = sqlite3.connect(":memory:", check_same_thread=False)  # used from the screen's worker threads
         self.conn.execute("CREATE VIRTUAL TABLE kb USING fts5(source, body)")
         dirs = [PKG_KB] + list(extra_dirs or [])
         for d in dirs:

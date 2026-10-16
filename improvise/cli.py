@@ -400,6 +400,11 @@ def cmd_mcp(args) -> None:
         mcp.close_all()
 
 
+def cmd_ui(args) -> None:
+    from .web import serve
+    serve(port=args.port, open_browser=not args.no_browser)
+
+
 def cmd_doctor(args) -> None:
     import urllib.request
     from .config import load
@@ -477,6 +482,10 @@ def main(argv: list[str] | None = None) -> None:
     co.set_defaults(func=cmd_contribute)
 
     sub.add_parser("doctor", help="check setup").set_defaults(func=cmd_doctor)
+    u = sub.add_parser("ui", help="open the Improvise screen in your browser (local only)")
+    u.add_argument("--port", type=int, default=8765)
+    u.add_argument("--no-browser", action="store_true", help="do not open the browser automatically")
+    u.set_defaults(func=cmd_ui)
     sub.add_parser("pro", help="what Improvise Pro adds").set_defaults(func=cmd_pro)
 
     tm = sub.add_parser("team", help="work on a brief as a project team (PM, consultant, engineers...)")
@@ -534,7 +543,7 @@ def main(argv: list[str] | None = None) -> None:
             mod.register_cli(sub)
 
     args = p.parse_args(argv)
-    if args.cmd in ("chat", "ask", "team"):
+    if args.cmd in ("chat", "ask", "team", "ui"):
         try:
             from .guard import auto_backup
             auto_backup()

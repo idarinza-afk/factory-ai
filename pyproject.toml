@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "improvise"
-version = "0.11.0"
+version = "0.12.0"
 description = "Local AI assistant for production line design, engineering calculations and documents"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -26,4 +26,4 @@ factory-ai = "improvise.cli:main"  # old name, kept for compatibility
 include = ["improvise*"]
 
 [tool.setuptools.package-data]
-improvise = ["knowledge_base/*.md", "benchmarks/*.jsonl", "team_roles.json", "skill_library/*/SKILL.md"]
+improvise = ["knowledge_base/*.md", "benchmarks/*.jsonl", "team_roles.json", "web_ui.html", "skill_library/*/SKILL.md"]

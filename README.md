@@ -7,7 +7,9 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.11 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.12 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+
+![The Improvise screen: chat with tool steps on the left, the electrical drawing it made on the right](docs/images/ui.png)
 
 ![Improvise calculating takt time, machine count, OEE, ROI and a line layout](docs/images/demo.gif)
 
@@ -16,6 +18,12 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.12 — 2026-10-16**
+- 🖥️ **A screen, not just a command line.** `improvise ui` opens Improvise in your browser: chat in any language,
+  watch each calculation step as it runs, and see the drawings it makes (2D layout, 3D model, electrical sheets,
+  flowcharts, lists, PLC code) right next to the answer. Approve or deny actions with a click, and manage the
+  rules it must follow. Runs on your own computer only (127.0.0.1), works offline, no extra installs.
 
 **v0.11 — 2026-10-16**
 - 📈 **Tested on harder and harder problems** (Qwen3 8B on a 6 GB laptop GPU): challenge levels 2–5 went from
@@ -218,6 +226,7 @@ your computer - use a local model for confidential projects, or the expert mode 
 ## Usage
 
 ```bash
+improvise ui                        # open the Improvise screen in your browser (chat + drawings + rules)
 improvise chat                      # interactive assistant (type /save to store an answer as a case)
 improvise ask "Bottling line, 20,000 bottles/day on 2 shifts: how many 3,000 bph fillers do I need?"
 improvise tools                     # list all tools

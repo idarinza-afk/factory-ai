@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.12 — 2026-10-16
+### Added
+- `improvise ui`: local web screen (standard library only). Chat with live tool steps, previews of produced files
+  (SVG/HTML/3D viewer/CSV/Markdown/PLC code), approve/deny prompts for actions that change something, engineer rules,
+  save answer as a case. Listens on 127.0.0.1 only; API calls need the per-session token; Host header checked.
+### Fixed
+- SQLite connections (experience memory, knowledge index) can be used from worker threads.
+
 ## v0.11 — 2026-10-16
 ### Added
 - Challenge levels 6-7; benchmark checks with fixed values and alternative correct answers.

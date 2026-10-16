@@ -35,8 +35,10 @@
 ### v0.9 (done)
 - 2D DXF / 3D / electrical drawings, machine knowledge, challenge benchmark
 
-### v0.10
-- Desktop/web UI (chat + forms + file previews)
+### v0.12 (done)
+- Local web screen: chat, live tool steps, file previews, approvals, rules
+
+### Next
 - Quotation / proposal package: 2D drawing, 3D views, machine spec, machine list in one bundle
 - Utility calculator (power, compressed air, water, steam)
 - A3 layout drawing with title block, DXF export; 3D placement script for Blender/FreeCAD
