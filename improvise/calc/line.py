@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import math
 
 from ..tools import tool
@@ -113,7 +115,19 @@ def line_balance(tasks: list[dict], cycle_time_s: float) -> dict:
         tasks: list of {"name": str, "time_s": float, "predecessors": [names]}
         cycle_time_s: target cycle time (usually the takt time) in seconds
     """
-    by_name = {t["name"]: {**t, "predecessors": list(t.get("predecessors", []))} for t in tasks}
+    by_name = {}
+    for t in tasks:  # small models use many spellings: accept them instead of silently dropping precedence
+        name = str(t.get("name") or t.get("task") or t.get("id") or "").strip()
+        if not name:
+            raise ValueError("every task needs a name")
+        pre = next((t[k] for k in ("predecessors", "after", "depends_on", "requires", "prev", "previous")
+                    if t.get(k) not in (None, "", [])), [])
+        if isinstance(pre, str):
+            pre = [x.strip() for x in re.split(r"[,;/ ]+", pre) if x.strip()]
+        time_s = next((t[k] for k in ("time_s", "time", "duration_s", "seconds", "duration") if t.get(k) is not None), None)
+        if time_s is None:
+            raise ValueError(f"task {name} has no time_s")
+        by_name[name] = {"name": name, "time_s": float(time_s), "predecessors": [str(x) for x in pre]}
     for t in by_name.values():
         if t["time_s"] > cycle_time_s:
             raise ValueError(f"task {t['name']} ({t['time_s']} s) is longer than the cycle time - split it or parallelise")

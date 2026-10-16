@@ -517,3 +517,13 @@ def test_cylinder_total_includes_other_air():
     r = REGISTRY["pneumatic_cylinder"].call({"bore_mm": 40, "stroke_mm": 200, "cycles_per_min": 12,
                                              "quantity": 10, "other_air_NL_min": 200})
     assert abs(r["machine_total_air_NL_min"] - 598.8) < 0.5
+
+
+def test_line_balance_accepts_after_alias():
+    from improvise.tools import REGISTRY, load_all
+    load_all()
+    tasks = [{"name": "A", "time_s": 20}, {"name": "B", "time_s": 15, "after": "A"}, {"name": "C", "time_s": 25, "after": ["A"]},
+             {"name": "D", "time_s": 10, "after": "B, C"}, {"name": "E", "time_s": 30, "after": ["D"]},
+             {"name": "F", "time_s": 12, "after": ["E"]}]
+    r = REGISTRY["line_balance"].call({"tasks": tasks, "cycle_time_s": 40})
+    assert r["workstations"] == 4 and r["stations"][0]["tasks"][0] == "A"
