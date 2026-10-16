@@ -44,3 +44,24 @@ def test_layout_uses_library_sizes_over_guesses(tmp_path, monkeypatch):
     assert lay["machines"][0]["length_mm"] == 1240
     notes = " ".join(lay["model_library_notes"])
     assert "replaced by the library value" in notes and "retort-4b" in notes
+
+
+def test_pass_line_mismatch_is_reported(tmp_path, monkeypatch):
+    monkeypatch.setenv("IMPROVISE_HOME", str(tmp_path / "home"))
+    monkeypatch.delenv("IMPROVISE_MODEL_LIBRARY", raising=False)
+    import json
+    from improvise import model_library as ml
+    from improvise.tools import REGISTRY, load_all
+    load_all()
+    d = _lib(tmp_path)
+    for mid, h in (("a", 750), ("b", 900)):
+        (d / "models" / mid).mkdir()
+        (d / "models" / mid / "meta.json").write_text(json.dumps({"id": mid, "name": mid, "category": "conveyor",
+            "footprint_mm": {"L": 1000, "W": 400, "H": 900},
+            "connections": [{"name": "Infeed", "at": [-500, 0, h], "dir": [-1, 0, 0]},
+                            {"name": "Outfeed", "at": [500, 0, h], "dir": [1, 0, 0]}]}))
+    ml.learn(d)
+    lay = REGISTRY["layout_line"].call({"project": "p", "machines": [{"name": "A", "model_id": "a"},
+                                                                     {"name": "B", "model_id": "b"}]})
+    assert lay["machines"][0]["pass_line_mm"]["outfeed_mm"] == 750
+    assert any("PASS LINE MISMATCH" in n for n in lay["model_library_notes"])

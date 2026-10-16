@@ -132,6 +132,9 @@ def article(m: dict) -> str:
     lines = [f"# {m.get('name', m['id'])}",
              f"Library model id: {m['id']} | category: {m.get('category', '')} | status: {m.get('status', '')}",
              f"Footprint L x W x H: {f['L']} x {f['W']} x {f['H']} mm (L along the product flow, X axis)."]
+    pl = pass_line(m)
+    if pl["infeed_mm"] or pl["outfeed_mm"]:
+        lines.append(f"Pass line (product height): infeed {pl['infeed_mm']} mm, outfeed {pl['outfeed_mm']} mm.")
     if m.get("line_role"):
         lines.append(f"Role in the line: {m['line_role']}")
     if m.get("key_specs"):
@@ -194,6 +197,31 @@ def learn(folder: str | Path) -> dict:
     except Exception:
         pass
     return {"library": str(d), "models": len(models), "categories": len(cats), "knowledge_dir": str(kdir)}
+
+
+def _conn_height(m: dict, side: str) -> float | None:
+    """Product infeed (-X) or outfeed (+X) height from the connection points."""
+    want = -1 if side == "in" else 1
+    words = ("infeed", "load", "in ") if side == "in" else ("outfeed", "unload", "out ")
+    best = None
+    for c in m.get("connections") or []:
+        at, d = c.get("at"), c.get("dir")
+        name = str(c.get("name", "")).lower() + " "
+        if not (isinstance(at, list) and len(at) == 3):
+            continue
+        if isinstance(d, list) and len(d) == 3 and d[0] == want and abs(d[1]) < 1e-9 and abs(d[2]) < 1e-9:
+            if any(w in name for w in words) or best is None:
+                best = float(at[2])
+    return best
+
+
+def pass_line(m: dict) -> dict:
+    """Product transfer heights of a model: infeed, outfeed (mm) from connections, specs or key specs."""
+    spec = (m.get("specs") or {}).get("pass_line_mm")
+    txt = re.search(r"pass line\s*(\d{3,4})", str(m.get("key_specs", "")), re.I)
+    base = float(spec) if isinstance(spec, (int, float)) else (float(txt.group(1)) if txt else None)
+    return {"infeed_mm": _conn_height(m, "in") or base, "outfeed_mm": _conn_height(m, "out") or base,
+            "nominal_mm": base}
 
 
 def footprint_for(name_or_id: str) -> dict | None:

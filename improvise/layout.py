@@ -93,7 +93,11 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
                 item["height_mm"] = m["height_mm"]
             hit = m.get("_model")
             if hit:
+                from .model_library import pass_line
                 item["model_id"] = hit["id"]
+                pl = pass_line(hit)
+                if pl["infeed_mm"] or pl["outfeed_mm"]:
+                    item["pass_line_mm"] = pl
                 if hit.get("clearances_mm"):
                     item["clearances_mm"] = hit["clearances_mm"]
             placed.append(item)
@@ -103,6 +107,12 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
     total_w = y
     order = {m["name"]: i for i, m in enumerate(machines)}
     placed.sort(key=lambda p: order.get(p["name"], 0))
+    for a_, b_ in zip(placed, placed[1:]):  # product must pass from one machine to the next at the same height
+        out_h = (a_.get("pass_line_mm") or {}).get("outfeed_mm")
+        in_h = (b_.get("pass_line_mm") or {}).get("infeed_mm")
+        if out_h and in_h and abs(out_h - in_h) > 20:
+            lib_notes.append(f"PASS LINE MISMATCH: {a_['name']} outfeed {out_h:g} mm -> {b_['name']} infeed {in_h:g} mm "
+                             f"({in_h - out_h:+g} mm): adjust legs/feet, add a transfer or an incline")
 
     fits = None
     if room_length_mm and room_width_mm:
