@@ -169,6 +169,27 @@ class Agent:
                         "inputs only if they were wrong). Do not mention this check.")
         return None
 
+    BREAK_WORDS = r"break|meal|lunch|พัก|休憩|休息|nghỉ|istirahat|휴식|pause"
+    # (tool, argument that must be set when the question mentions it, regex on the question, note)
+    ARG_CHECKS = [
+        ("oee", "planned_breaks_min", BREAK_WORDS,
+         "The question mentions planned breaks but planned_breaks_min is 0: call oee again with planned_breaks_min "
+         "(planned_time_min = the whole shift)."),
+        ("takt_time", "break_min_per_shift", BREAK_WORDS,
+         "The question mentions breaks but break_min_per_shift is 0: call takt_time again with break_min_per_shift."),
+        ("takt_from_rate", "break_min_per_shift", BREAK_WORDS + r"|per shift|ต่อกะ",
+         "If the shift has breaks, set break_min_per_shift (and shifts/hours_per_shift) and call again."),
+    ]
+
+    def _arg_warning(self, name: str, args: dict) -> str | None:
+        q = getattr(self, "_question", "")
+        for tool, arg, pattern, note in self.ARG_CHECKS:
+            if name == tool and not args.get(arg) and re.search(pattern, q, re.I):
+                if tool == "takt_from_rate" and not args.get("hours_per_shift"):
+                    continue  # a pure rate question: breaks do not matter
+                return note
+        return None
+
     PROMISE = re.compile(r"\b(I will now|I'll now|let'?s proceed|let me now|next,? I will|I will (now )?(create|draw|generate|make))\b"
                          r"|จะดำเนินการ|ต่อไปจะ(สร้าง|วาด|ทำ)", re.I)
 
@@ -328,6 +349,9 @@ class Agent:
                     if files:
                         reports.append("Files: " + ", ".join(files))
                 if isinstance(result, dict) and tool:
+                    warn = self._arg_warning(name, args if isinstance(args, dict) else {})
+                    if warn:
+                        result = {**result, "input_warning": warn}
                     tool_results.setdefault(name, []).append(result)
                 if self.on_tool:
                     self.on_tool(name, args, result)

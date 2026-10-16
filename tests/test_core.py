@@ -580,3 +580,12 @@ def test_agent_sends_back_answer_that_ignores_tool_result(tmp_path, monkeypatch)
     a = Agent(load())
     a.llm = Stub()
     assert "1.875" in a.ask("1,200 cases of 12 bottles per 8 h shift with 30 min breaks: takt per bottle?")
+
+
+def test_arg_warning_for_forgotten_breaks(tmp_path, monkeypatch):
+    monkeypatch.setenv("IMPROVISE_HOME", str(tmp_path))
+    from improvise.agent import Agent
+    from improvise.config import load
+    a = Agent(load())
+    a._question = "8 hour shift with 60 minutes of planned breaks, oee?"
+    assert a._arg_warning("oee", {"planned_time_min": 480}) and not a._arg_warning("oee", {"planned_breaks_min": 60})
