@@ -60,9 +60,30 @@ def load_library(folder: Path | None = None) -> list[dict]:
             continue
         mid = m.get("id") or meta.parent.name
         by_id[mid] = {**by_id.get(mid, {}), **m, "id": mid, "_dir": str(meta.parent)}
-    models = sorted(by_id.values(), key=lambda m: (m.get("category", ""), m["id"]))
+    for m in by_id.values():
+        m["footprint_mm"] = _norm_footprint(m)
+    models = sorted(by_id.values(), key=lambda m: (str(m.get("category", "")), m["id"]))
     _cache = (str(d), stamp, models)
     return models
+
+
+def _norm_footprint(m: dict) -> dict:
+    """Libraries write footprints as {L,W,H}, [L,W(,H)] or only an envelope: make it {L,W,H} (mm)."""
+    f = m.get("footprint_mm")
+    if isinstance(f, (list, tuple)):
+        f = dict(zip("LWH", f))
+    if isinstance(f, dict) and f.get("L") and f.get("W"):
+        return {"L": f.get("L"), "W": f.get("W"), "H": f.get("H"), **{k: v for k, v in f.items() if k not in "LWH"}}
+    env = m.get("envelope_mm")
+    if isinstance(env, (list, tuple)) and len(env) >= 2:
+        return dict(zip("LWH", env))
+    if isinstance(env, dict):
+        try:
+            dims = [abs(float(env[a][1]) - float(env[a][0])) for a in ("x", "y", "z") if a in env]
+            return dict(zip("LWH", [round(x) for x in dims]))
+        except (TypeError, ValueError, IndexError, KeyError):
+            pass
+    return {"L": None, "W": None, "H": None}
 
 
 def _words(s: str) -> set[str]:
@@ -76,7 +97,7 @@ def _hay(m: dict) -> str:
 
 
 def _footprint(m: dict) -> dict:
-    f = m.get("footprint_mm") or {}
+    f = _norm_footprint(m)
     return {"L": f.get("L"), "W": f.get("W"), "H": f.get("H")}
 
 

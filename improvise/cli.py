@@ -415,7 +415,7 @@ def cmd_library(args) -> None:
         _print(ml.machine_model_details(args.arg or ""))
         return
     for m in (ml.find_models(args.arg) if args.arg else ml.load_library()):
-        f = m.get("footprint_mm") or {}
+        f = ml._footprint(m)
         print(f"{m['id']:44s} {str(m.get('category', '')):18s} {f.get('L')} x {f.get('W')} x {f.get('H')} mm")
 
 
