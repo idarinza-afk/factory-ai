@@ -527,3 +527,32 @@ def test_line_balance_accepts_after_alias():
              {"name": "F", "time_s": 12, "after": ["E"]}]
     r = REGISTRY["line_balance"].call({"tasks": tasks, "cycle_time_s": 40})
     assert r["workstations"] == 4 and r["stations"][0]["tasks"][0] == "A"
+
+
+def test_agent_sends_back_when_required_tool_skipped(tmp_path, monkeypatch):
+    monkeypatch.setenv("IMPROVISE_HOME", str(tmp_path))
+    monkeypatch.setenv("IMPROVISE_NUMBER_AUDIT", "0")
+    from improvise.agent import Agent
+    from improvise.config import load
+
+    class Stub:
+        def __init__(self):
+            self.n = 0
+
+        def chat(self, messages, tools=None):
+            self.n += 1
+            if self.n == 1:  # works the receiver out by hand
+                return {"role": "assistant", "content": "The receiver needs 125 litres."}
+            if self.n == 2:
+                assert "air_receiver" in messages[-1]["content"]
+                return {"role": "assistant", "content": "", "tool_calls": [{"function": {
+                    "name": "air_receiver", "arguments": {"deficit_NL_min": 250, "duration_min": 2,
+                                                         "p_start_bar": 7.5, "p_min_bar": 6}}}]}
+            if self.n == 3:  # promises and stops
+                return {"role": "assistant", "content": "Receiver 338 L. I will now create the drawing."}
+            return {"role": "assistant", "content": "Receiver 338 L, choose 500 L."}
+
+    a = Agent(load())
+    a.llm = Stub()
+    out = a.ask("Peak 2 minutes, 250 NL/min above the compressor, 7.5 to 6 bar: how big is the receiver?")
+    assert "338" in out and a.llm.n == 4

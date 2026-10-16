@@ -117,6 +117,33 @@ class Agent:
                     "the complete final answer again for the user - do not mention this check.")
         return None
 
+    # The question asks for something a tool must produce: (regex on the question, tool, needs numbers in the question)
+    REQUIRED_TOOLS = [
+        (r"receiver|ถังพักลม|ถังลม|储气罐|エアタンク|bình chứa khí", "air_receiver", True),
+        (r"electrical (diagram|schematic|drawing)|wiring diagram|ไดอะแกรมไฟฟ้า|วงจรไฟฟ้า|แบบไฟฟ้า|电气图|電気図|sơ đồ điện",
+         "electrical_schematic", False),
+        (r"\boee\b", "oee", True),
+        (r"\bcpk?\b", "process_capability", True),
+        (r"line balanc|workstations|สมดุลไลน์", "line_balance", True),
+        (r"\bdxf\b|2d (layout )?drawing|แบบ 2d|2d layout", "layout_dxf", False),
+        (r"3d model|โมเดล 3d|\b3d\b.*(view|model|layout)", "layout_3d", False),
+    ]
+    PROMISE = re.compile(r"\b(I will now|I'll now|let'?s proceed|let me now|next,? I will|I will (now )?(create|draw|generate|make))\b"
+                         r"|จะดำเนินการ|ต่อไปจะ(สร้าง|วาด|ทำ)", re.I)
+
+    def _required_tool(self, called: set[str], allowed: set[str]) -> str | None:
+        q = getattr(self, "_question", "")
+        if not q or not self.use_tools:
+            return None
+        for pattern, tool, needs_numbers in self.REQUIRED_TOOLS:
+            if tool not in REGISTRY or tool in called or (self.tool_names is not None and tool not in self.tool_names):
+                continue
+            if re.search(pattern, q, re.I) and (not needs_numbers or re.search(r"\d", q)):
+                allowed.add(tool)
+                return (f"The request needs {tool} - call it now with the user's figures (do not work it out by hand "
+                        "or skip it), then write the complete final answer.")
+        return None
+
     def _guard(self, answer: str, called: set[str], allowed: set[str]) -> str | None:
         """Catch answers that hand-make what a tool must produce (e.g. ladder text without the generator).
         Guards come from plugins: GUARDS = [(regex, required_tool, message)]."""
@@ -172,6 +199,7 @@ class Agent:
             content += "\n\n[Reference knowledge - prefer this over general assumptions]\n" + "\n---\n".join(
                 f"({src}) {body[:900]}" for src, body in refs)
         self.messages.append({"role": "user", "content": content})
+        self._question = low
         allowed = self._select_tools(text)
         called_tools: set[str] = set()
         guard_retries = 0
@@ -193,7 +221,11 @@ class Agent:
             calls = msg.get("tool_calls") or []
             if not calls:
                 answer = msg.get("content", "")
-                fix = None if last_round else self._guard(answer, called_tools, allowed)
+                fix = None if last_round else (self._guard(answer, called_tools, allowed)
+                                               or self._required_tool(called_tools, allowed))
+                if not fix and not last_round and self.PROMISE.search(answer[-600:]):
+                    fix = ("You said you would do more but stopped. Do it now with the tools, then write the complete "
+                           "final answer (include everything from before).")
                 if not answer.strip() and not last_round:  # small models sometimes stop with an empty reply
                     fix = ("Your reply was empty. Continue the task: call the tools you still need (convert per-shift or "
                            "per-day figures to per-hour first if needed), then give the final answer.")
