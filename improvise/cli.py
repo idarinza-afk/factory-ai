@@ -400,6 +400,25 @@ def cmd_mcp(args) -> None:
         mcp.close_all()
 
 
+def cmd_library(args) -> None:
+    from . import model_library as ml
+    if args.action == "learn":
+        if not args.arg:
+            sys.exit("usage: improvise library learn <folder with catalog.json>")
+        r = ml.learn(args.arg)
+        print(f"learned {r['models']} machine designs in {r['categories']} categories from {r['library']}")
+        print(f"knowledge articles: {r['knowledge_dir']}")
+        return
+    if not ml.library_dir():
+        sys.exit("no model library connected - run: improvise library learn <folder>")
+    if args.action == "show":
+        _print(ml.machine_model_details(args.arg or ""))
+        return
+    for m in (ml.find_models(args.arg) if args.arg else ml.load_library()):
+        f = m.get("footprint_mm") or {}
+        print(f"{m['id']:44s} {str(m.get('category', '')):18s} {f.get('L')} x {f.get('W')} x {f.get('H')} mm")
+
+
 def cmd_ui(args) -> None:
     from .web import serve
     serve(port=args.port, open_browser=not args.no_browser)
@@ -482,6 +501,10 @@ def main(argv: list[str] | None = None) -> None:
     co.set_defaults(func=cmd_contribute)
 
     sub.add_parser("doctor", help="check setup").set_defaults(func=cmd_doctor)
+    lb = sub.add_parser("library", help="your 3D machine model library: learn the designs, search, show")
+    lb.add_argument("action", choices=["learn", "list", "show"])
+    lb.add_argument("arg", nargs="?", help="folder (learn), search words (list) or model id (show)")
+    lb.set_defaults(func=cmd_library)
     u = sub.add_parser("ui", help="open the Improvise screen in your browser (local only)")
     u.add_argument("--port", type=int, default=8765)
     u.add_argument("--no-browser", action="store_true", help="do not open the browser automatically")

@@ -23,6 +23,8 @@ Rules:
   the engineer's confirmed rules; confirmed rules override general knowledge.
 - Use search_knowledge for reference material and say which source you used.
 - Leave prices you do not know blank; never invent prices or supplier data.
+- If find_machine_model is available, the engineer's own machine designs are connected: look machines up there
+  (sizes, pass line, connections, clearances) before assuming dimensions, and give layout_line their model_id.
 - FLOWCHART FIRST: for a new process, machine sequence, control logic or workflow where the user has not
   given a flowchart, first draw one with make_flowchart, show it, and ask the user to approve or correct
   it. Only after approval write PLC code, programs or detailed documents.
@@ -206,6 +208,14 @@ class Agent:
         reports: list[str] = []   # tool output that must reach the user verbatim (generated code, verdicts, files)
         if "make_flowchart" in REGISTRY and self.use_tools and self.tool_names is None:
             allowed.add("make_flowchart")
+        try:
+            from .model_library import library_dir
+            if library_dir() and self.use_tools:  # the engineer's own machine designs are connected
+                for t in ("find_machine_model", "machine_model_details"):
+                    if t in REGISTRY and (self.tool_names is None or t in self.tool_names):
+                        allowed.add(t)
+        except Exception:
+            pass
         if self.cfg.expert_provider and self.use_tools and self.tool_names is None:
             allowed.add("ask_expert")  # a second brain is configured
         seen: dict[str, str] = {}

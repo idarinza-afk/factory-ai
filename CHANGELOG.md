@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.13 — 2026-10-16
+### Added
+- Model library: `improvise library learn|list|show`, tools find_machine_model and machine_model_details, one
+  knowledge article per machine design; layout_line takes footprints, heights and clearances from `model_id`.
+- Probe benchmark (benchmarks/probe.jsonl), level-8 challenge items, `forbid_tools` checks.
+- pneumatic_cylinder `other_air_NL_min` -> machine_total_air_NL_min.
+### Changed
+- Agent sends back answers that skip a tool the question needs, or that promise work and stop.
+- line_balance accepts after/depends_on/requires and comma-separated predecessors.
+
 ## v0.12 — 2026-10-16
 ### Added
 - `improvise ui`: local web screen (standard library only). Chat with live tool steps, previews of produced files

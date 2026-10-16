@@ -16,15 +16,13 @@ from .tools import tool
 
 
 def _catalog() -> dict[str, dict]:
-    lib = os.environ.get("IMPROVISE_MODEL_LIBRARY")
-    if not lib:
-        return {}
-    f = Path(lib) / "catalog.json"
-    if not f.exists():
-        return {}
-    data = json.loads(f.read_text(encoding="utf-8"))
-    items = data if isinstance(data, list) else data.get("models", data.get("items", []))
-    return {str(i.get("name", "")).lower(): i for i in items if isinstance(i, dict)}
+    """Model library entries by lower-case name and id (see improvise.model_library)."""
+    from .model_library import load_library
+    out: dict[str, dict] = {}
+    for m in load_library():
+        out[str(m.get("name", "")).lower()] = m
+        out[m["id"].lower()] = m
+    return out
 
 
 @tool
@@ -34,7 +32,8 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
 
     Args:
         project: project name (used for file names)
-        machines: list of {"name": str, "length_mm": float, "width_mm": float} in flow order
+        machines: list of {"name": str, "length_mm": float, "width_mm": float} in flow order. With a model library
+            connected, give {"name", "model_id"} and the real footprint is used.
         gap_mm: clearance between machines along the flow
         aisle_mm: operator/maintenance aisle around and between rows
         room_length_mm: room length to check against (0 = no check)
@@ -47,6 +46,23 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
     rows = max(1, int(rows))
     per_row = -(-len(machines) // rows)
     catalog = _catalog()
+    resolved = []
+    for m in machines:  # real footprints from the model library when a model is referenced
+        m = dict(m)
+        hit = catalog.get(str(m.get("model_id", "")).lower()) or catalog.get(str(m.get("name", "")).lower())
+        if hit:
+            fp = hit.get("footprint_mm") or {}
+            if not m.get("length_mm") and fp.get("L"):
+                m["length_mm"] = fp["L"]
+            if not m.get("width_mm") and fp.get("W"):
+                m["width_mm"] = fp["W"]
+            if not m.get("height_mm") and fp.get("H"):
+                m["height_mm"] = fp["H"]
+            m["_model"] = hit
+        if not m.get("length_mm") or not m.get("width_mm"):
+            raise ValueError(f"{m.get('name')}: give length_mm and width_mm (or a model_id from find_machine_model)")
+        resolved.append(m)
+    machines = resolved
     row_lengths = []
     for r in range(rows):
         chunk = machines[r * per_row:(r + 1) * per_row]
@@ -69,9 +85,13 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
                 "length_mm": m["length_mm"], "width_mm": m["width_mm"],
                 "rotation_deg": 180 if r % 2 == 1 else 0, "row": r + 1,
             }
-            hit = catalog.get(m["name"].lower())
+            if m.get("height_mm"):
+                item["height_mm"] = m["height_mm"]
+            hit = m.get("_model")
             if hit:
-                item["model_ref"] = hit.get("file") or hit.get("path") or hit.get("id")
+                item["model_id"] = hit["id"]
+                if hit.get("clearances_mm"):
+                    item["clearances_mm"] = hit["clearances_mm"]
             placed.append(item)
             x += m["length_mm"] + gap_mm
         max_len = max(max_len, x - gap_mm + aisle_mm)

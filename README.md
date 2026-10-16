@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.12 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.13 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![The Improvise screen: chat with tool steps on the left, the electrical drawing it made on the right](docs/images/ui.png)
 
@@ -18,6 +18,16 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.13 — 2026-10-16**
+- 🏭 **Knows your own machines.** Point it at your 3D model library (`improvise library learn <folder>`) and it
+  learns every design: footprint, pass line, infeed/outfeed and utility connection points, clearances, service side
+  and sources. Layouts then use the real footprints (`model_id`), and answers draw on your designs instead of
+  generic sizes. The library stays on your computer.
+- 🧪 New probe tests (OEE, line balance, Chinese/Japanese/Vietnamese questions, missing data, unknown alarm codes,
+  Cpk) and fixes found by them: line balancing accepts any way of writing task precedence; answers that skip a
+  required tool (receiver, electrical diagram, OEE…) or promise work and stop are sent back. Level 7 (whole
+  compressed-air system) went from 60 % to **100 %**.
 
 **v0.12 — 2026-10-16**
 - 🖥️ **A screen, not just a command line.** `improvise ui` opens Improvise in your browser: chat in any language,
@@ -226,6 +236,7 @@ your computer - use a local model for confidential projects, or the expert mode 
 ## Usage
 
 ```bash
+improvise library learn D:\Models     # learn your own 3D machine designs (catalog.json + meta.json)
 improvise ui                        # open the Improvise screen in your browser (chat + drawings + rules)
 improvise chat                      # interactive assistant (type /save to store an answer as a case)
 improvise ask "Bottling line, 20,000 bottles/day on 2 shifts: how many 3,000 bph fillers do I need?"
