@@ -46,19 +46,23 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
     rows = max(1, int(rows))
     per_row = -(-len(machines) // rows)
     catalog = _catalog()
-    resolved = []
+    resolved, lib_notes = [], []
     for m in machines:  # real footprints from the model library when a model is referenced
         m = dict(m)
         hit = catalog.get(str(m.get("model_id", "")).lower()) or catalog.get(str(m.get("name", "")).lower())
         if hit:
             fp = hit.get("footprint_mm") or {}
-            if not m.get("length_mm") and fp.get("L"):
-                m["length_mm"] = fp["L"]
-            if not m.get("width_mm") and fp.get("W"):
-                m["width_mm"] = fp["W"]
-            if not m.get("height_mm") and fp.get("H"):
-                m["height_mm"] = fp["H"]
+            for key, k in (("length_mm", "L"), ("width_mm", "W"), ("height_mm", "H")):
+                if fp.get(k):
+                    if m.get(key) and abs(float(m[key]) - float(fp[k])) > 0.05 * float(fp[k]):
+                        lib_notes.append(f"{m.get('name')}: {key} {m[key]} replaced by the library value {fp[k]}")
+                    m[key] = fp[k]
             m["_model"] = hit
+        elif catalog:
+            from .model_library import find_models
+            cands = [c["id"] for c in find_models(str(m.get("name", "")), limit=2)]
+            lib_notes.append(f"{m.get('name')}: not linked to the model library (sizes as given)"
+                             + (f" - matching models: {', '.join(cands)}; pass model_id to use the real design" if cands else ""))
         if not m.get("length_mm") or not m.get("width_mm"):
             raise ValueError(f"{m.get('name')}: give length_mm and width_mm (or a model_id from find_machine_model)")
         resolved.append(m)
@@ -126,4 +130,5 @@ def layout_line(project: str, machines: list[dict], gap_mm: float = 1000, aisle_
     svg_path.write_text("\n".join(parts), encoding="utf-8")
     json_path.write_text(json.dumps({"project": project, "units": "mm", "machines": placed}, indent=2), encoding="utf-8")
     return {"envelope_length_m": round(max_len / 1000, 2), "envelope_width_m": round(total_w / 1000, 2),
-            "fits_room": fits, "svg": str(svg_path), "json_for_3d": str(json_path), "machines": placed}
+            "fits_room": fits, "svg": str(svg_path), "json_for_3d": str(json_path), "machines": placed,
+            **({"model_library_notes": lib_notes} if lib_notes else {})}

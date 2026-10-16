@@ -128,6 +128,7 @@ class Agent:
         (r"electrical (diagram|schematic|drawing)|wiring diagram|ไดอะแกรมไฟฟ้า|วงจรไฟฟ้า|แบบไฟฟ้า|电气图|電気図|sơ đồ điện",
          "electrical_schematic", False),
         (r"\boee\b", "oee", True),
+        (r"model library|from (our|the|my) library|in the library|คลังโมเดล|จากคลัง|ในคลัง", "find_machine_model", False),
         (r"shaft diameter|đường kính trục|เส้นผ่าน(ศูนย์กลาง)?เพลา|ขนาดเพลา|轴径|軸径", "shaft_diameter", True),
         (r"\bcpk?\b", "process_capability", True),
         (r"line balanc|workstations|สมดุลไลน์", "line_balance", True),
@@ -190,7 +191,8 @@ class Agent:
                 return note
         return None
 
-    PROMISE = re.compile(r"\b(I will now|I'll now|let'?s proceed|let me now|next,? I will|I will (now )?(create|draw|generate|make))\b"
+    PROMISE = re.compile(r"\b(I will now|I'll now|let'?s proceed|let me now|next,? I will|I will (now )?(create|draw|generate|make)"
+                         r"|let me (adjust|fix|correct|update|try again|re-?run|simulate again)|I'?ll (adjust|fix|correct) (this|it|the))\b"
                          r"|จะดำเนินการ|ต่อไปจะ(สร้าง|วาด|ทำ)", re.I)
 
     def _required_tool(self, called: set[str], allowed: set[str]) -> str | None:
@@ -202,6 +204,8 @@ class Agent:
         for pattern, tool, needs_numbers in rules:
             if tool not in REGISTRY or tool in called or (self.tool_names is not None and tool not in self.tool_names):
                 continue
+            if tool.startswith("plc_generate") and not getattr(self, "flow_approved", False):
+                continue  # no PLC code before the flowchart is approved
             if re.search(pattern, q, re.I) and (not needs_numbers or re.search(r"\d", q)):
                 allowed.add(tool)
                 return (f"The request needs {tool} - call it now with the user's figures (do not work it out by hand "
@@ -294,8 +298,8 @@ class Agent:
             calls = msg.get("tool_calls") or []
             if not calls:
                 answer = msg.get("content", "")
-                fix = None if last_round else (self._guard(answer, called_tools, allowed)
-                                               or self._required_tool(called_tools, allowed))
+                fix = None if last_round else (self._required_tool(called_tools, allowed)
+                                               or self._guard(answer, called_tools, allowed))
                 if not fix and not last_round and self.PROMISE.search(answer[-600:]):
                     fix = ("You said you would do more but stopped. Do it now with the tools, then write the complete "
                            "final answer (include everything from before).")
@@ -309,7 +313,7 @@ class Agent:
                     fix = self._audit_numbers(answer, evidence)
                 if not fix and reports:
                     answer = answer.rstrip() + "\n\n---\n" + "\n\n".join(dict.fromkeys(reports))
-                if fix and guard_retries < 2:
+                if fix and guard_retries < 3:
                     guard_retries += 1
                     self.messages.append({"role": "user", "content": fix})
                     continue
