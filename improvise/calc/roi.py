@@ -27,16 +27,26 @@ def _irr(flows: list[float]) -> float | None:
 
 
 @tool
-def roi(investment: float, annual_net_cashflow: list[float], discount_rate: float = 0.08) -> dict:
+def roi(investment: float, annual_net_cashflow: list[float], discount_rate: float = 0.08, years: int = 0) -> dict:
     """Payback period, NPV and IRR of a machine or line investment.
 
     Args:
         investment: upfront investment (positive number)
-        annual_net_cashflow: net cash benefit for each year, e.g. [1200000, 1200000, 1300000]
-        discount_rate: discount rate as a fraction, default 0.08
+        annual_net_cashflow: net cash benefit for each year, e.g. [1200000, 1200000, 1300000]; or one number with years
+        discount_rate: discount rate as a fraction, default 0.08 (8 is read as 8 %)
+        years: with a single annual_net_cashflow number, the number of years it repeats
     """
     if investment <= 0:
         raise ValueError("investment must be > 0")
+    if isinstance(annual_net_cashflow, (int, float, str)):  # one figure for every year
+        if not years:
+            raise ValueError("annual_net_cashflow is one number: also give years (e.g. 5), or a list per year")
+        annual_net_cashflow = [float(annual_net_cashflow)] * int(years)
+    elif years and len(annual_net_cashflow) == 1:
+        annual_net_cashflow = list(annual_net_cashflow) * int(years)
+    annual_net_cashflow = [float(x) for x in annual_net_cashflow]
+    if discount_rate > 1:
+        discount_rate = discount_rate / 100
     flows = [-investment] + [float(x) for x in annual_net_cashflow]
     cum, payback = -investment, None
     for year, cf in enumerate(annual_net_cashflow, start=1):

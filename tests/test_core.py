@@ -556,3 +556,27 @@ def test_agent_sends_back_when_required_tool_skipped(tmp_path, monkeypatch):
     a.llm = Stub()
     out = a.ask("Peak 2 minutes, 250 NL/min above the compressor, 7.5 to 6 bar: how big is the receiver?")
     assert "338" in out and a.llm.n == 4
+
+
+def test_agent_sends_back_answer_that_ignores_tool_result(tmp_path, monkeypatch):
+    monkeypatch.setenv("IMPROVISE_HOME", str(tmp_path))
+    monkeypatch.setenv("IMPROVISE_NUMBER_AUDIT", "0")
+    from improvise.agent import Agent
+    from improvise.config import load
+
+    class Stub:
+        n = 0
+
+        def chat(self, messages, tools=None):
+            self.n += 1
+            if self.n == 1:
+                return {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "takt_time", "arguments": {
+                    "demand_units": 14400, "shifts": 1, "hours_per_shift": 8, "break_min_per_shift": 30}}}]}
+            if self.n == 2:  # ignores the tool and divides by hand
+                return {"role": "assistant", "content": "Takt is 0.25 s per bottle."}
+            assert "takt_time_s = 1.875" in messages[-1]["content"]
+            return {"role": "assistant", "content": "Takt is 1.875 s per bottle, 22.5 s per case."}
+
+    a = Agent(load())
+    a.llm = Stub()
+    assert "1.875" in a.ask("1,200 cases of 12 bottles per 8 h shift with 30 min breaks: takt per bottle?")

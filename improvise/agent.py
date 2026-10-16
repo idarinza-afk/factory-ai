@@ -23,6 +23,9 @@ Rules:
   the engineer's confirmed rules; confirmed rules override general knowledge.
 - Use search_knowledge for reference material and say which source you used.
 - Leave prices you do not know blank; never invent prices or supplier data.
+- If an input is missing but the tool has a sensible default (material, efficiency, service factor, pressure...),
+  use the default, state it as an assumption and give the result. Ask only when no reasonable default exists
+  (e.g. the production rate or demand).
 - If find_machine_model is available, the engineer's own machine designs are connected: look machines up there
   (sizes, pass line, connections, clearances) before assuming dimensions, and give layout_line their model_id.
 - FLOWCHART FIRST: for a new process, machine sequence, control logic or workflow where the user has not
@@ -125,11 +128,47 @@ class Agent:
         (r"electrical (diagram|schematic|drawing)|wiring diagram|ไดอะแกรมไฟฟ้า|วงจรไฟฟ้า|แบบไฟฟ้า|电气图|電気図|sơ đồ điện",
          "electrical_schematic", False),
         (r"\boee\b", "oee", True),
+        (r"shaft diameter|đường kính trục|เส้นผ่าน(ศูนย์กลาง)?เพลา|ขนาดเพลา|轴径|軸径", "shaft_diameter", True),
         (r"\bcpk?\b", "process_capability", True),
         (r"line balanc|workstations|สมดุลไลน์", "line_balance", True),
         (r"\bdxf\b|2d (layout )?drawing|แบบ 2d|2d layout", "layout_dxf", False),
         (r"3d model|โมเดล 3d|\b3d\b.*(view|model|layout)", "layout_3d", False),
     ]
+    # The key result of each tool: an answer that called the tool must use one of these values
+    HEADLINES = {
+        "takt_time": ["takt_time_s"], "takt_from_rate": ["takt_time_s_per_unit", "takt_time_s_per_pack"],
+        "oee": ["oee"], "machines_required": ["machines"], "line_balance": ["workstations"],
+        "air_receiver": ["receiver_volume_L", "suggested_size_L"],
+        "batch_heat_up": ["heating_power_kW", "steam_kg_per_h_during_heat_up"],
+        "pump_power": ["selected_motor_kW", "required_motor_kW"], "shaft_diameter": ["min_diameter_mm", "suggested_diameter_mm"],
+        "drive_torque": ["output_torque_Nm", "design_torque_Nm"], "roi": ["payback_years", "npv"],
+        "process_capability": ["Cpk"], "pipe_size": ["nominal_size_DN", "required_inside_diameter_mm"],
+        "conveyor_sizing": ["selected_motor_kW"], "heat_load": ["heat_load_kW"], "cooling_load": ["design_load_kW"],
+        "buffer_size": ["buffer_units"], "staffing": ["total_headcount"],
+        "pneumatic_cylinder": ["machine_total_air_NL_min", "air_NL_per_min_all_cylinders", "suggested_standard_bore_mm"],
+        "product_spacing": ["outfeed_speed_m_per_min", "speed_ratio"],
+        "utilities_summary": ["transformer_kVA_min", "compressed_air_NL_min"],
+    }
+
+    def _unused_results(self, answer: str, results: dict) -> str | None:
+        found = self._numbers(answer)
+
+        def near(v: float) -> bool:
+            return any(abs(v - h) <= max(0.02 * abs(v), 0.011) or abs(v * 100 - h) <= max(0.02 * abs(v * 100), 0.15)
+                       or abs(v / 1000 - h) <= 0.02 * abs(v / 1000) + 0.001 for h in found)
+        for tool, outs in results.items():
+            keys = self.HEADLINES.get(tool)
+            if not keys:
+                continue
+            vals = [(k, o[k]) for o in outs for k in keys
+                    if isinstance(o.get(k), (int, float)) and not isinstance(o.get(k), bool)]
+            if vals and not any(near(float(v)) for _, v in vals):
+                shown = ", ".join(f"{k} = {v}" for k, v in vals[:4])
+                return (f"Your answer does not use the result of {tool} ({shown}). Do not recompute by hand: write the "
+                        "complete final answer again using the tool results (call the tool again with corrected "
+                        "inputs only if they were wrong). Do not mention this check.")
+        return None
+
     PROMISE = re.compile(r"\b(I will now|I'll now|let'?s proceed|let me now|next,? I will|I will (now )?(create|draw|generate|make))\b"
                          r"|จะดำเนินการ|ต่อไปจะ(สร้าง|วาด|ทำ)", re.I)
 
@@ -219,6 +258,7 @@ class Agent:
         if self.cfg.expert_provider and self.use_tools and self.tool_names is None:
             allowed.add("ask_expert")  # a second brain is configured
         seen: dict[str, str] = {}
+        tool_results: dict[str, list] = {}
 
         for round_no in range(self.cfg.max_tool_rounds):
             last_round = round_no == self.cfg.max_tool_rounds - 1
@@ -239,6 +279,8 @@ class Agent:
                 if not answer.strip() and not last_round:  # small models sometimes stop with an empty reply
                     fix = ("Your reply was empty. Continue the task: call the tools you still need (convert per-shift or "
                            "per-day figures to per-hour first if needed), then give the final answer.")
+                if not fix and not last_round and tool_results:
+                    fix = self._unused_results(answer, tool_results)
                 if not fix and not last_round and called_tools and self.cfg.number_audit:
                     evidence = "\n".join(str(m.get("content", "")) for m in self.messages if m.get("role") in ("user", "tool"))
                     fix = self._audit_numbers(answer, evidence)
@@ -283,6 +325,8 @@ class Agent:
                              and re.search(r"\.(xlsx|csv|docx|md|svg|html|dxf|obj|json|st|txt|ino|mmd)$", v, re.I)]
                     if files:
                         reports.append("Files: " + ", ".join(files))
+                if isinstance(result, dict) and tool:
+                    tool_results.setdefault(name, []).append(result)
                 if self.on_tool:
                     self.on_tool(name, args, result)
                 text_result = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, default=str)
