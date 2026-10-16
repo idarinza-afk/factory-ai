@@ -176,7 +176,9 @@ class Agent:
         q = getattr(self, "_question", "")
         if not q or not self.use_tools:
             return None
-        for pattern, tool, needs_numbers in self.REQUIRED_TOOLS:
+        from .tools import PLUGINS
+        rules = list(self.REQUIRED_TOOLS) + [r for m in PLUGINS.values() for r in getattr(m, "REQUIRED_TOOLS", [])]
+        for pattern, tool, needs_numbers in rules:
             if tool not in REGISTRY or tool in called or (self.tool_names is not None and tool not in self.tool_names):
                 continue
             if re.search(pattern, q, re.I) and (not needs_numbers or re.search(r"\d", q)):
