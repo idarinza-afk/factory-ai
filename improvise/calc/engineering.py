@@ -40,13 +40,14 @@ def conveyor_sizing(length_m: float, rate_per_min: float, pitch_mm: float, produ
                     belt_mass_kg_per_m: float = 3.0, friction: float = 0, incline_deg: float = 0,
                     efficiency: float = 0.8, service_factor: float = 1.5, belt_type: str = "flat",
                     condition: str = "dry", drive_pulley_mm: float = 100, pulley_surface: str = "lagged",
-                    accel_time_s: float = 1.0, transmission: str = "direct", drive_element_mm: float = 0) -> dict:
+                    accel_time_s: float = 1.0, transmission: str = "direct", drive_element_mm: float = 0,
+                    product_length_mm: float = 0, gap_mm: float = -1) -> dict:
     """Belt/chain conveyor: speed, belt pull, running AND starting torque, shaft load, motor size, wet/dry effects.
 
     Args:
         length_m: conveyor length between pulley centres in m
         rate_per_min: products per minute to transport
-        pitch_mm: spacing between products on the belt in mm (product length + gap)
+        pitch_mm: spacing between products on the belt in mm = product length + gap (e.g. 250 mm tray + 150 mm gap = 400)
         product_mass_kg: mass of one product in kg
         belt_mass_kg_per_m: belt/chain mass per metre of conveyor length, default 3.0
         friction: belt-to-bed running friction; 0 = from belt_type and condition
@@ -60,7 +61,11 @@ def conveyor_sizing(length_m: float, rate_per_min: float, pitch_mm: float, produ
         accel_time_s: start-up time to full speed in s, default 1.0
         transmission: how the gearmotor drives the pulley shaft: direct (hollow/coupled shaft), chain, gear, v_belt, timing_belt
         drive_element_mm: pitch diameter of the sprocket/pulley ON THE GEARMOTOR shaft when transmission is not direct
+        product_length_mm: optional - with gap_mm, the pitch is product_length_mm + gap_mm (overrides pitch_mm)
+        gap_mm: optional gap between products in mm (use with product_length_mm)
     """
+    if product_length_mm and gap_mm >= 0:
+        pitch_mm = product_length_mm + gap_mm
     belt_type = belt_type.lower().replace(" ", "_").replace("-", "_")
     belt_type = {"belt": "flat", "pu": "flat", "pvc": "flat", "slider_bed": "flat", "chain": "modular",
                  "table_top": "modular", "rollers": "roller_bed", "roller": "roller_bed"}.get(belt_type, belt_type)
@@ -104,8 +109,8 @@ def conveyor_sizing(length_m: float, rate_per_min: float, pitch_mm: float, produ
     if condition != "dry":
         warnings.append("Friction for wet/sticky running is an allowance: confirm on site by measuring motor current "
                         "under the real condition and record it as a verified case.")
-    return {"speed_m_per_min": round(v * 60, 2), "speed_m_per_s": round(v, 3), "load_on_belt_kg": round(load, 1),
-            "belt_type": belt_type, "condition": condition, "friction_used": mu,
+    return {"pitch_mm_used": pitch_mm, "speed_m_per_min": round(v * 60, 2), "speed_m_per_s": round(v, 3),
+            "load_on_belt_kg": round(load, 1), "belt_type": belt_type, "condition": condition, "friction_used": mu,
             "effective_pull_N": round(force, 1), "starting_pull_N": round(force_start, 1),
             "drive_pulley_rpm": round(rpm, 1), "running_torque_Nm": round(t_run, 1), "starting_torque_Nm": round(t_start, 1),
             "required_gearbox_output_torque_Nm": round(t_run * service_factor, 1),
