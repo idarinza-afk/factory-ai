@@ -22,11 +22,26 @@ def next_motor(kw: float) -> float:
     return math.ceil(kw)
 
 
+# Running friction belt/chain -> bed. modular dry/wet: Rexnord TableTop/MatTop manual (acetal on UHMWPE 0.25 dry,
+# 0.21 water); flat dry: ISO 5048 belt on steel 0.3-0.4. Values marked allowance are engineering allowances from
+# field experience (wet PU/PVC belts suck onto flat stainless slider beds; sauce, sugar, starch, fat make it sticky):
+# calibrate them on site from the measured motor current.
+FRICTION = {("flat", "dry"): 0.30, ("flat", "wet"): 0.50, ("flat", "sticky"): 0.60,
+            ("modular", "dry"): 0.25, ("modular", "wet"): 0.21, ("modular", "sticky"): 0.35,
+            ("roller_bed", "dry"): 0.05, ("roller_bed", "wet"): 0.06, ("roller_bed", "sticky"): 0.10}
+BREAKAWAY = {"dry": 1.3, "wet": 1.8, "sticky": 2.0}  # static / running friction after a standstill (allowance)
+DRUM_FRICTION = {("lagged", "dry"): 0.40, ("lagged", "wet"): 0.30, ("lagged", "sticky"): 0.25,
+                 ("bare", "dry"): 0.35, ("bare", "wet"): 0.15, ("bare", "sticky"): 0.10}  # belt on drive drum
+TRANSMISSION_FZ = {"direct": 1.0, "chain": 1.25, "gear": 1.15, "v_belt": 1.75, "timing_belt": 2.25, "flat_belt": 2.5}
+
+
 @tool
 def conveyor_sizing(length_m: float, rate_per_min: float, pitch_mm: float, product_mass_kg: float,
-                    belt_mass_kg_per_m: float = 3.0, friction: float = 0.3, incline_deg: float = 0,
-                    efficiency: float = 0.8, service_factor: float = 1.5) -> dict:
-    """Belt/chain conveyor: required speed, belt pull and motor power (next IEC size).
+                    belt_mass_kg_per_m: float = 3.0, friction: float = 0, incline_deg: float = 0,
+                    efficiency: float = 0.8, service_factor: float = 1.5, belt_type: str = "flat",
+                    condition: str = "dry", drive_pulley_mm: float = 100, pulley_surface: str = "lagged",
+                    accel_time_s: float = 1.0, transmission: str = "direct", drive_element_mm: float = 0) -> dict:
+    """Belt/chain conveyor: speed, belt pull, running AND starting torque, shaft load, motor size, wet/dry effects.
 
     Args:
         length_m: conveyor length between pulley centres in m
@@ -34,21 +49,154 @@ def conveyor_sizing(length_m: float, rate_per_min: float, pitch_mm: float, produ
         pitch_mm: spacing between products on the belt in mm (product length + gap)
         product_mass_kg: mass of one product in kg
         belt_mass_kg_per_m: belt/chain mass per metre of conveyor length, default 3.0
-        friction: belt-to-bed friction coefficient (slider bed ~0.3, rollers ~0.05), default 0.3
+        friction: belt-to-bed running friction; 0 = from belt_type and condition
         incline_deg: incline angle in degrees, default 0
         efficiency: drive efficiency (gearbox etc.), default 0.8
-        service_factor: margin on motor power, default 1.5
+        service_factor: gearbox/motor service factor for the duty, default 1.5
+        belt_type: flat (PU/PVC belt on slider bed), modular (plastic modular / table-top chain on wear strips), roller_bed
+        condition: dry, wet (water, washdown, wet product) or sticky (sauce, sugar, starch, fat residue)
+        drive_pulley_mm: drive pulley / sprocket pitch diameter in mm, default 100
+        pulley_surface: lagged or bare drive pulley (flat belts), default lagged
+        accel_time_s: start-up time to full speed in s, default 1.0
+        transmission: how the gearmotor drives the pulley shaft: direct (hollow/coupled shaft), chain, gear, v_belt, timing_belt
+        drive_element_mm: pitch diameter of the sprocket/pulley ON THE GEARMOTOR shaft when transmission is not direct
     """
+    belt_type = belt_type.lower().replace(" ", "_").replace("-", "_")
+    belt_type = {"belt": "flat", "pu": "flat", "pvc": "flat", "slider_bed": "flat", "chain": "modular",
+                 "table_top": "modular", "rollers": "roller_bed", "roller": "roller_bed"}.get(belt_type, belt_type)
+    condition = {"washdown": "wet", "water": "wet", "dirty": "sticky", "oily": "sticky"}.get(condition.lower(), condition.lower())
+    if (belt_type, condition) not in FRICTION:
+        raise ValueError("belt_type must be flat, modular or roller_bed; condition dry, wet or sticky")
+    mu = friction or FRICTION[(belt_type, condition)]
     v = rate_per_min * pitch_mm / 1000 / 60  # m/s
     load = length_m / (pitch_mm / 1000) * product_mass_kg
     belt = 2 * length_m * belt_mass_kg_per_m
     th = math.radians(incline_deg)
-    force = G * (friction * (load + belt) * math.cos(th) + load * math.sin(th))
+    force = G * (mu * (load + belt) * math.cos(th) + load * math.sin(th))
+    k_break = BREAKAWAY[condition] if belt_type != "roller_bed" else 1.2
+    force_start = G * (mu * k_break * (load + belt) * math.cos(th) + load * math.sin(th)) + (load + belt) * v / accel_time_s
+    r = drive_pulley_mm / 2000
+    t_run, t_start = force * r, force_start * r
+    rpm = v / (math.pi * drive_pulley_mm / 1000) * 60
     p_shaft = force * v / 1000
     p_motor = p_shaft / efficiency * service_factor
+    # a standard motor gives about 1.5-2x rated torque while starting: size so the start needs <= 1.5x rated
+    p_start = t_start * rpm * 2 * math.pi / 60 / 1000 / efficiency / 1.5
+    selected = next_motor(max(p_motor, p_start))
+    # belt tensions and the load they put on the drive shaft
+    if belt_type == "flat":
+        mu_d = DRUM_FRICTION[(pulley_surface.lower(), condition)]
+        euler = math.exp(mu_d * math.pi)  # 180 deg wrap
+        t2 = force_start / (euler - 1) * 1.2  # minimum slack-side tension + 20 %
+        t1 = force_start + t2
+        slip_note = (f"drive pulley ({pulley_surface}, {condition}) needs >= {t2:.0f} N slack-side tension "
+                     "(take-up) not to slip at start")
+    else:  # positive sprocket drive: no slip, little slack-side tension
+        t1, t2, slip_note = force_start * 1.1, force_start * 0.1, "sprocket drive: no slip; keep catenary sag on the return"
+    shaft_load = t1 + t2
+    fz = TRANSMISSION_FZ.get(transmission.lower(), 1.0)
+    gm_radial = 2000 * t_start / drive_element_mm * fz if transmission.lower() != "direct" and drive_element_mm else 0
+    warnings = []
+    if belt_type == "flat" and condition != "dry":
+        warnings.append("Wet/sticky flat belt on a flat stainless slider bed: the belt sucks onto the bed and drag can "
+                        "rise sharply. Prefer a perforated/grooved slider bed, UHMW strips or a roller bed, a belt with "
+                        "a structured underside, and a lagged drive pulley.")
+    if condition != "dry":
+        warnings.append("Friction for wet/sticky running is an allowance: confirm on site by measuring motor current "
+                        "under the real condition and record it as a verified case.")
     return {"speed_m_per_min": round(v * 60, 2), "speed_m_per_s": round(v, 3), "load_on_belt_kg": round(load, 1),
-            "effective_pull_N": round(force, 1), "shaft_power_kW": round(p_shaft, 3),
-            "required_motor_kW": round(p_motor, 3), "selected_motor_kW": next_motor(p_motor)}
+            "belt_type": belt_type, "condition": condition, "friction_used": mu,
+            "effective_pull_N": round(force, 1), "starting_pull_N": round(force_start, 1),
+            "drive_pulley_rpm": round(rpm, 1), "running_torque_Nm": round(t_run, 1), "starting_torque_Nm": round(t_start, 1),
+            "required_gearbox_output_torque_Nm": round(t_run * service_factor, 1),
+            "belt_tension_T1_N": round(t1), "belt_tension_T2_N": round(t2),
+            "drive_shaft_radial_load_N": round(shaft_load),
+            **({"gearmotor_shaft_radial_load_N": round(gm_radial)} if gm_radial else {}),
+            "shaft_power_kW": round(p_shaft, 3), "required_motor_kW": round(max(p_motor, p_start), 3),
+            "selected_motor_kW": selected, "slip_check": slip_note, "warnings": warnings,
+            "next_step": ("Choose a gearmotor from the brand's catalogue and run gearmotor_check with its datasheet values "
+                          "(rated output torque, output rpm, output shaft diameter, permissible radial load): kW alone "
+                          "does not prove the shaft and gearbox can take this load.")}
+
+
+@tool
+def gearmotor_check(running_torque_Nm: float, starting_torque_Nm: float, required_rpm: float, radial_load_N: float,
+                    rated_output_torque_Nm: float = 0, output_rpm: float = 0, motor_kW: float = 0,
+                    output_shaft_mm: float = 0, permissible_radial_load_N: float = 0, catalogue_service_factor: float = 0,
+                    required_service_factor: float = 1.5, starting_torque_ratio: float = 0, load_offset_mm: float = 0,
+                    brand_model: str = "") -> dict:
+    """Check ONE gearmotor from a brand's datasheet against the conveyor load: output torque, starting torque, speed,
+    permissible radial (overhung) load on the output shaft and shaft stress. Every brand differs - use its datasheet.
+
+    Args:
+        running_torque_Nm: load torque at the output shaft while running (conveyor_sizing running_torque_Nm)
+        starting_torque_Nm: load torque at start / breakaway (conveyor_sizing starting_torque_Nm)
+        required_rpm: output speed needed (conveyor_sizing drive_pulley_rpm)
+        radial_load_N: radial load on the gearmotor output shaft (drive_shaft_radial_load_N if the pulley is on it,
+            gearmotor_shaft_radial_load_N for a chain/belt drive, 0 for a hollow shaft with its own bearings)
+        rated_output_torque_Nm: datasheet output torque Ma (or Mn) of this gearmotor
+        output_rpm: datasheet output speed
+        motor_kW: datasheet motor power
+        output_shaft_mm: datasheet output shaft diameter
+        permissible_radial_load_N: datasheet permissible radial/overhung load FRa at the shaft middle
+        catalogue_service_factor: datasheet service factor fB (= gearbox rating / motor torque); 0 if not given
+        required_service_factor: duty service factor needed (starts/h, shocks, hours/day), default 1.5
+        starting_torque_ratio: motor starting torque / rated torque from the datasheet (MA/MN); 0 = assume 1.6 (DOL IE3)
+        load_offset_mm: distance from the shaft shoulder to the load centre (pulley/sprocket); 0 = shaft middle
+        brand_model: brand and type, for the report
+    """
+    missing = [n for n, v in (("rated_output_torque_Nm", rated_output_torque_Nm), ("output_rpm", output_rpm),
+                              ("output_shaft_mm", output_shaft_mm),
+                              ("permissible_radial_load_N", permissible_radial_load_N if radial_load_N else 1)) if not v]
+    checks, ok_all = [], True
+
+    def add(name, ok, text):
+        nonlocal ok_all
+        ok_all = ok_all and ok
+        checks.append({"check": name, "ok": ok, "detail": text})
+
+    if rated_output_torque_Nm:
+        need = running_torque_Nm * required_service_factor
+        add("output torque", rated_output_torque_Nm >= need,
+            f"rated {rated_output_torque_Nm:g} Nm vs running {running_torque_Nm:g} x SF {required_service_factor:g} = {need:.1f} Nm")
+        ratio = starting_torque_ratio or 1.6
+        avail = rated_output_torque_Nm * ratio
+        add("starting torque", avail >= starting_torque_Nm,
+            f"about {avail:.1f} Nm available at start ({ratio:g} x rated{'' if starting_torque_ratio else ', assumed'}) "
+            f"vs {starting_torque_Nm:g} Nm breakaway")
+        if catalogue_service_factor:
+            add("catalogue service factor fB", catalogue_service_factor >= required_service_factor,
+                f"fB {catalogue_service_factor:g} vs required {required_service_factor:g}")
+    if output_rpm:
+        dev = (output_rpm - required_rpm) / required_rpm
+        add("speed", abs(dev) <= 0.15 or (dev > 0),
+            f"{output_rpm:g} rpm vs {required_rpm:g} rpm needed ({dev:+.0%}; a VFD can trim, but torque falls above "
+            "base speed and cooling falls at low speed)")
+    if permissible_radial_load_N and radial_load_N:
+        add("radial (overhung) load", permissible_radial_load_N >= radial_load_N,
+            f"permissible {permissible_radial_load_N:g} N vs {radial_load_N:g} N"
+            + (" - load not at the shaft middle: apply the brand's position correction" if load_offset_mm else ""))
+    if output_shaft_mm:
+        bend = radial_load_N * (load_offset_mm or output_shaft_mm) / 1000  # Nm, lever from the bearing
+        teq = math.sqrt(starting_torque_Nm ** 2 + bend ** 2)
+        d_min = (16 * teq / (math.pi * 40e6)) ** (1 / 3) * 1000
+        add("shaft stress", output_shaft_mm >= d_min,
+            f"shaft {output_shaft_mm:g} mm vs about {d_min:.1f} mm minimum (torsion at start + bending from the radial "
+            "load, 40 MPa allowable incl. keyway/fatigue)")
+    verdict = ("NEEDS DATASHEET VALUES: " + ", ".join(missing)) if missing and not checks else \
+        ("OK" if ok_all else "NOT OK - " + "; ".join(c["check"] for c in checks if not c["ok"]))
+    if missing and checks:
+        verdict += " (not checked: " + ", ".join(missing) + ")"
+    advice = []
+    if not ok_all:
+        advice += ["bigger gear unit (higher rated torque / fB), not only a bigger motor",
+                   "move the radial load off the gearmotor: hollow-shaft mounting on the pulley shaft with a torque arm, "
+                   "or pulley shaft in its own pillow-block bearings with a flexible coupling",
+                   "for wet lines: reduce bed friction (perforated/grooved slider, UHMW strips, roller bed) instead of "
+                   "only adding power"]
+    name = brand_model or "gearmotor"
+    return {"brand_model": brand_model, "checks": checks, "verdict": verdict, "advice": advice,
+            "report_to_user": f"{name} check: {verdict}"}
 
 
 @tool

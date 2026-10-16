@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.14 — 2026-10-16
+### Added
+- conveyor_sizing: belt_type, condition (dry/wet/sticky), starting torque, belt tensions, drive shaft radial load,
+  pulley slip check, transmission radial load (2000 x M / d0 x fZ).
+- gearmotor_check: datasheet-based check of torque, starting torque, speed, radial load, shaft stress.
+- Knowledge: conveyor drives on wet and dry lines (Rexnord friction tables, ISO 5048, SEW overhung load).
+- Layout pass line per machine from the model library, mismatch warnings.
+- Probe item: wet PU conveyor + gearmotor check (Thai).
+### Fixed
+- OEE: impossible performance is reported as an error; break warning only when planned time is the stated shift.
+
 ## v0.13 — 2026-10-16
 ### Added
 - Model library: `improvise library learn|list|show`, tools find_machine_model and machine_model_details, one

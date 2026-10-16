@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.13 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.14 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![The Improvise screen: chat with tool steps on the left, the electrical drawing it made on the right](docs/images/ui.png)
 
@@ -18,6 +18,17 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.14 — 2026-10-16**
+- ⚙️ **Conveyor drives sized on torque and shaft load, not only kW.** `conveyor_sizing` now knows the belt type
+  (flat PU/PVC on a slider bed, modular plastic, roller bed) and the line condition (dry, wet, sticky): it gives
+  running and starting torque, belt tensions, the load on the drive shaft and a pulley slip check. On a wet line
+  the kW hardly changes, but starting torque and shaft load can triple — the reason conveyors that work on dry
+  lines stall or break shafts on wet lines.
+- New `gearmotor_check`: check a real gearmotor from any brand's datasheet (rated output torque, speed, shaft
+  diameter, permissible radial load, fB). Brands differ, so it never assumes datasheet values.
+- Pass line check between neighbouring machines in layouts from your model library; PLC specs written in other
+  styles are accepted; the ST generator no longer declares an input twice.
 
 **v0.13 — 2026-10-16**
 - 🏭 **Knows your own machines.** Point it at your 3D model library (`improvise library learn <folder>`) and it

@@ -589,3 +589,22 @@ def test_arg_warning_for_forgotten_breaks(tmp_path, monkeypatch):
     a = Agent(load())
     a._question = "8 hour shift with 60 minutes of planned breaks, oee?"
     assert a._arg_warning("oee", {"planned_time_min": 480}) and not a._arg_warning("oee", {"planned_breaks_min": 60})
+
+
+def test_wet_line_raises_torque_and_shaft_load_and_gearmotor_check():
+    from improvise.tools import REGISTRY, load_all
+    load_all()
+    dry = REGISTRY["conveyor_sizing"].call({"length_m": 4, "rate_per_min": 24, "pitch_mm": 400, "product_mass_kg": 1.2})
+    wet = REGISTRY["conveyor_sizing"].call({"length_m": 4, "rate_per_min": 24, "pitch_mm": 400, "product_mass_kg": 1.2,
+                                            "condition": "wet"})
+    assert wet["starting_torque_Nm"] > 2 * dry["starting_torque_Nm"]
+    assert wet["drive_shaft_radial_load_N"] > 2 * dry["drive_shaft_radial_load_N"] and wet["warnings"]
+    r = REGISTRY["gearmotor_check"].call({"running_torque_Nm": wet["running_torque_Nm"],
+                                          "starting_torque_Nm": wet["starting_torque_Nm"],
+                                          "required_rpm": wet["drive_pulley_rpm"],
+                                          "radial_load_N": wet["drive_shaft_radial_load_N"],
+                                          "rated_output_torque_Nm": 25, "output_rpm": 31, "output_shaft_mm": 20,
+                                          "permissible_radial_load_N": 600})
+    assert r["verdict"].startswith("NOT OK") and "radial" in r["verdict"]
+    assert REGISTRY["gearmotor_check"].call({"running_torque_Nm": 1, "starting_torque_Nm": 2, "required_rpm": 30,
+                                             "radial_load_N": 100})["verdict"].startswith("NEEDS DATASHEET")

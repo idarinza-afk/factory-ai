@@ -144,7 +144,7 @@ class Agent:
         "pump_power": ["selected_motor_kW", "required_motor_kW"], "shaft_diameter": ["min_diameter_mm", "suggested_diameter_mm"],
         "drive_torque": ["output_torque_Nm", "design_torque_Nm"], "roi": ["payback_years", "npv"],
         "process_capability": ["Cpk"], "pipe_size": ["nominal_size_DN", "required_inside_diameter_mm"],
-        "conveyor_sizing": ["selected_motor_kW"], "heat_load": ["heat_load_kW"], "cooling_load": ["design_load_kW"],
+        "conveyor_sizing": ["selected_motor_kW", "starting_torque_Nm", "running_torque_Nm"], "heat_load": ["heat_load_kW"], "cooling_load": ["design_load_kW"],
         "buffer_size": ["buffer_units"], "staffing": ["total_headcount"],
         "pneumatic_cylinder": ["machine_total_air_NL_min", "air_NL_per_min_all_cylinders", "suggested_standard_bore_mm"],
         "product_spacing": ["outfeed_speed_m_per_min", "speed_ratio"],
@@ -178,6 +178,9 @@ class Agent:
          "(planned_time_min = the whole shift)."),
         ("takt_time", "break_min_per_shift", BREAK_WORDS,
          "The question mentions breaks but break_min_per_shift is 0: call takt_time again with break_min_per_shift."),
+        ("conveyor_sizing", "condition", r"\bwet\b|washdown|wash-down|เปียก|ล้าง|sauce|ซอส|sticky|เหนียว|น้ำ",
+         "The question describes a wet or sticky line but condition was not set: call conveyor_sizing again with "
+         "condition='wet' or 'sticky' and the right belt_type - drag, starting torque and shaft load rise a lot."),
         ("takt_from_rate", "break_min_per_shift", BREAK_WORDS + r"|per shift|ต่อกะ",
          "If the shift has breaks, set break_min_per_shift (and shifts/hours_per_shift) and call again."),
     ]
