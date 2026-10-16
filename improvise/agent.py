@@ -212,6 +212,24 @@ class Agent:
                          r"|let me know if you (want|would like) me to (adjust|fix|re-?simulate|re-?run|update|correct|try))\b"
                          r"|จะดำเนินการ|ต่อไปจะ(สร้าง|วาด|ทำ)", re.I)
 
+    # Domain checklists: (regex on the question, regex the answer must contain, message)
+    CHECKLISTS = [
+        (r"snack|ข้าวแต๋น|ขนม|หมูแผ่น|extruded|rice cracker",
+         r"x-?ray|เอกซเรย์|เอ็กซเรย์",
+         "This is a snack line: follow the snack-line-design workflow and include the packing and inspection stages "
+         "(multihead weigher, VFFS with N2, date coder, checkweigher, X-ray - metallized film needs X-ray - case "
+         "packer). Update the flowchart/answer and give the complete final answer."),
+    ]
+
+    def _checklist(self, answer: str) -> str | None:
+        q = getattr(self, "_question", "")
+        from .tools import PLUGINS
+        rules = list(self.CHECKLISTS) + [r for m in PLUGINS.values() for r in getattr(m, "CHECKLISTS", [])]
+        for q_pat, must, msg in rules:
+            if re.search(q_pat, q, re.I) and not re.search(must, answer, re.I):
+                return msg
+        return None
+
     def _required_tool(self, called: set[str], allowed: set[str]) -> str | None:
         q = getattr(self, "_question", "")
         if not q or not self.use_tools:
@@ -316,7 +334,8 @@ class Agent:
             if not calls:
                 answer = msg.get("content", "")
                 fix = None if last_round else (self._required_tool(called_tools, allowed)
-                                               or self._guard(answer, called_tools, allowed))
+                                               or self._guard(answer, called_tools, allowed)
+                                               or self._checklist(answer))
                 if not fix and not last_round and self.PROMISE.search(answer[-600:]):
                     fix = ("You said you would do more but stopped. Do it now with the tools, then write the complete "
                            "final answer (include everything from before).")
