@@ -198,7 +198,11 @@ calculation tools) on **Qwen3 8B running locally on a laptop RTX 4050 (6 GB)**:
 | **Overall (core set, v0.6)** | **91 %** |
 | Challenge levels 2–5 (multi-step, Thai, rules) — v0.11 | **100 %** |
 | Challenge level 6 (multi-step line design) — v0.11 | **100 %** |
-| Challenge level 7 (complete system sizing) — v0.11 | 60 % |
+| Challenge level 7 (complete compressed-air system) — v0.13 | **100 %** (v0.11: 60 %) |
+| Challenge level 8 (proposal package with DXF/3D/machine list, Thai air system, gapping + electrical) — v0.14 | **100 %** after fixes (first run 86 %) |
+| Challenge level 9 (snack packing capacity, khao taen line flow in Thai) — v0.15 | **100 %** |
+| Probe set (OEE, line balance, Chinese/Japanese/Vietnamese, missing data, unknown alarm, Cpk, wet conveyor) — v0.15 | 85 % first run → most items 100 % after fixes |
+| Pro probes (refuse unapproved PLC writes, ESP32 pins, ladder + simulation, indexer torque) — v0.15 | **100 %** after fixes (first run 65 %) |
 
 What that means in practice:
 
