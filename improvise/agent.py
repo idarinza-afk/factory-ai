@@ -239,7 +239,7 @@ class Agent:
         for pattern, tool, needs_numbers in rules:
             if tool not in REGISTRY or tool in called or (self.tool_names is not None and tool not in self.tool_names):
                 continue
-            if tool.startswith("plc_generate") and not getattr(self, "flow_approved", False):
+            if (tool.startswith("plc_generate") or tool == "plc_simulate") and not getattr(self, "flow_approved", False):
                 continue  # no PLC code before the flowchart is approved
             if re.search(pattern, q, re.I) and (not needs_numbers or re.search(r"\d", q)):
                 allowed.add(tool)
