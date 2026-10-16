@@ -151,6 +151,7 @@ class Agent:
         "pneumatic_cylinder": ["machine_total_air_NL_min", "air_NL_per_min_all_cylinders", "suggested_standard_bore_mm"],
         "product_spacing": ["outfeed_speed_m_per_min", "speed_ratio"],
         "utilities_summary": ["transformer_kVA_min", "compressed_air_NL_min"],
+        "snack_packing_capacity": ["bags_per_min", "vffs_baggers", "inner_bag_volume_L"],
     }
 
     def _unused_results(self, answer: str, results: dict) -> str | None:

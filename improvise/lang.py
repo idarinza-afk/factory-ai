@@ -10,6 +10,14 @@ Add terms freely - one line per concept.
 from __future__ import annotations
 
 GLOSSARY: dict[str, list[str]] = {
+    "snack line extruded corn khao taen rice cracker": ["ขนม", "สแน็ค", "ข้าวแต๋น", "ข้าวโพดอบกรอบ", "ขนมอบกรอบ", "零食", "膨化",
+                                                       "スナック", "bánh snack", "makanan ringan", "과자"],
+    "pork sheet meat snack": ["หมูแผ่น", "肉脯", "khô heo"],
+    "extruder extrusion": ["เอ็กซ์ทรูดเดอร์", "เครื่องอัดรีด", "挤压机", "膨化机", "エクストルーダー", "máy đùn", "압출기"],
+    "seasoning coating tumble drum": ["ผงปรุงรส", "คลุกผง", "โรยผง", "เคลือบน้ำตาล", "调味", "シーズニング", "tẩm gia vị", "bumbu"],
+    "vffs packing bag multihead weigher": ["บรรจุซอง", "ซอง", "เครื่องชั่งหลายหัว", "包装机", "组合秤", "包装", "đóng gói", "kemasan", "포장"],
+    "x-ray checkweigher inspection": ["เอกซเรย์", "เครื่องชั่งตรวจสอบ", "ตรวจสอบสิ่งแปลกปลอม", "X光", "金检", "異物検査", "kiểm tra", "검사"],
+    "oven baking drying": ["อบ", "เตาอบ", "อบแห้ง", "烘烤", "烤箱", "オーブン", "sấy", "nướng", "oven", "오븐"],
     "conveyor belt": ["สายพาน", "คอนเวเยอร์", "输送带", "传送带", "输送机", "コンベア", "băng tải", "konveyor", "ban berjalan",
                       "컨베이어", "förderband", "transportband", "cinta transportadora", "transportador"],
     "motor": ["มอเตอร์", "电机", "马达", "モーター", "động cơ", "motor listrik", "모터", "antrieb"],

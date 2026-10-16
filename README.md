@@ -7,7 +7,7 @@ and it **keeps getting better from your own verified experience**, without your 
 
 Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro** (see below).
 
-> Status: v0.14 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
+> Status: v0.15 (preview) — see [What's new](#whats-new) and [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ![The Improvise screen: chat with tool steps on the left, the electrical drawing it made on the right](docs/images/ui.png)
 
@@ -18,6 +18,13 @@ Free to use. PLC control logic, IoT and dashboards are coming in **Improvise Pro
 ---
 
 ## What's new
+
+**v0.15 — 2026-10-16**
+- 🍘 **Snack lines.** New knowledge and a `snack-line-design` skill for extruded corn snacks (hot extruder),
+  khao taen (glutinous rice crackers, baked instead of fried, sugar syrup and sesame), baked crisps/crackers and
+  pork sheet, with seasoning/coating, multihead weigher + VFFS with nitrogen, checkweigher and X-ray (metallized
+  film), dust, humidity, HACCP and allergen checks — all with sources. New `snack_packing_capacity` tool: bags per
+  minute, weigher and VFFS count, bag volume from bulk density.
 
 **v0.14 — 2026-10-16**
 - ⚙️ **Conveyor drives sized on torque and shaft load, not only kW.** `conveyor_sizing` now knows the belt type

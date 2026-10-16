@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.15 — 2026-10-16
+### Added
+- Snack knowledge: line overview, extruded corn, khao taen (baked), baked crisps + pork sheet, seasoning and packing.
+- Skill snack-line-design; tool snack_packing_capacity; snack terms in the multilingual glossary.
+- Challenge level 9 (snack packing capacity, khao taen flow in Thai).
+- Datasheet questions require gearmotor_check.
+
 ## v0.14 — 2026-10-16
 ### Added
 - conveyor_sizing: belt_type, condition (dry/wet/sticky), starting torque, belt tensions, drive shaft radial load,

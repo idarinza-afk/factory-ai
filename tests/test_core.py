@@ -608,3 +608,12 @@ def test_wet_line_raises_torque_and_shaft_load_and_gearmotor_check():
     assert r["verdict"].startswith("NOT OK") and "radial" in r["verdict"]
     assert REGISTRY["gearmotor_check"].call({"running_torque_Nm": 1, "starting_torque_Nm": 2, "required_rpm": 30,
                                              "radial_load_N": 100})["verdict"].startswith("NEEDS DATASHEET")
+
+
+def test_snack_packing_capacity():
+    from improvise.tools import REGISTRY, load_all
+    load_all()
+    r = REGISTRY["snack_packing_capacity"].call({"product_kg_per_h": 300, "bag_weight_g": 50, "bulk_density_g_per_L": 70,
+                                                 "weigher_max_wpm": 60, "vffs_max_bpm": 70})
+    assert r["bags_per_min"] == 100 and r["vffs_baggers"] == 2 and r["multihead_weighers"] == 2
+    assert abs(r["inner_bag_volume_L"] - 1.19) < 0.01
