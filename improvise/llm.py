@@ -17,12 +17,13 @@ class LLMError(RuntimeError):
 
 
 class OllamaClient:
-    def __init__(self, base_url: str, model: str, temperature: float = 0.2, timeout: int = 600,
+    def __init__(self, base_url: str, model: str, temperature: float = 0.2, timeout: int = 0,
                  think: bool = False, num_ctx: int = 8192):
+        import os
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.temperature = temperature
-        self.timeout = timeout
+        self.timeout = timeout or int(os.environ.get("IMPROVISE_LLM_TIMEOUT", "300"))
         # Thinking models (e.g. Qwen3) answer far faster with thinking off; tools still do the maths.
         self.think: bool | None = think
         # Ollama's default context (4096) silently cuts the start of long prompts - the instructions.
@@ -57,6 +58,9 @@ class OllamaClient:
                 f"Cannot reach Ollama at {self.base_url}. Is it running? "
                 f"Install from https://ollama.com and run: ollama pull {self.model}"
             ) from e
+        except (TimeoutError, OSError) as e:  # socket timeout: the server accepted but never answered
+            raise LLMError(f"Ollama did not answer within {self.timeout} s - it may be stuck. Restart Ollama "
+                           "(quit it from the tray and start it again) and try once more.") from e
         msg = data.get("message", {})
         if self.think is False and not (msg.get("content") or "").strip() and not msg.get("tool_calls"):
             # some thinking models (e.g. Qwen3) occasionally stop with an empty reply when thinking is off:
