@@ -509,3 +509,11 @@ def test_empty_reply_is_retried():
             return {"role": "assistant", "content": "" if Mock.n == 1 else "two ovens"}
     a = Agent(load()); a.llm = Mock()
     assert a.ask("how many ovens") == "two ovens"
+
+
+def test_cylinder_total_includes_other_air():
+    from improvise.tools import REGISTRY, load_all
+    load_all()
+    r = REGISTRY["pneumatic_cylinder"].call({"bore_mm": 40, "stroke_mm": 200, "cycles_per_min": 12,
+                                             "quantity": 10, "other_air_NL_min": 200})
+    assert abs(r["machine_total_air_NL_min"] - 598.8) < 0.5
